@@ -42,6 +42,23 @@ function Presupuestos() {
   });
   const [aviso, setAviso] = useState("");
 
+  const delegadoAlDirector =
+    usuarioActual.rol === "Director" && delegacionVigente?.paraId === usuarioActual.id;
+  const puedeAsignar = usuarioActual.rol === "Contralor" || delegadoAlDirector;
+
+  if (!puedeAsignar) {
+    return (
+      <Panel className="mt-4">
+        <TituloPanel>Acceso restringido</TituloPanel>
+        <Aviso tono="alerta">
+          {usuarioActual.rol === "Director"
+            ? "El Director solo puede asignar y aprobar presupuestos con una delegación de autoridad vigente del Contralor."
+            : "Solo el Contralor (o el Director con delegación vigente) puede asignar presupuestos."}
+        </Aviso>
+      </Panel>
+    );
+  }
+
   function asignar(ev: React.FormEvent) {
     ev.preventDefault();
     const monto = Number(f.monto);
