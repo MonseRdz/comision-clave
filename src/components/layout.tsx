@@ -22,9 +22,15 @@ const ENLACES: Enlace[] = [
 const SOLO_CON_DELEGACION = ["/presupuestos", "/aprobacion"];
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { estado, setEstado, usuarioActual, registrar } = useStore();
+  const { estado, setEstado, usuarioActual, registrar, delegacionVigente } = useStore();
   const ruta = useRouterState({ select: (s) => s.location.pathname });
-  const enlaces = ENLACES.filter((e) => e.roles.includes(usuarioActual.rol));
+  const delegadoAlDirector =
+    usuarioActual.rol === "Director" && delegacionVigente?.paraId === usuarioActual.id;
+  const enlaces = ENLACES.filter(
+    (e) =>
+      e.roles.includes(usuarioActual.rol) &&
+      (usuarioActual.rol !== "Director" || delegadoAlDirector || !SOLO_CON_DELEGACION.includes(e.a)),
+  );
 
   return (
     <div className="min-h-screen">
