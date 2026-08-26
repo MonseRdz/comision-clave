@@ -150,7 +150,7 @@ function Gastos() {
   }
 
   const mios =
-    usuarioActual.rol === "Administrador"
+    usuarioActual.rol === "Contralor"
       ? estado.gastos
       : estado.gastos.filter((g) => g.comisionadoId === usuarioActual.id);
 

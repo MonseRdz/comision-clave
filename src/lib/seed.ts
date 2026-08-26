@@ -26,7 +26,6 @@ export function estadoInicial(): Estado {
       { id: "u2", nombre: "Lucía Revisora", rol: "Revisor", activo: true },
       { id: "u3", nombre: "Juan Entrenador", rol: "Comisionado", activo: true },
       { id: "u4", nombre: "Carlos Director", rol: "Director", activo: true },
-      { id: "u5", nombre: "Mónica Administradora", rol: "Administrador", activo: true },
     ],
     eventos: [
       {
