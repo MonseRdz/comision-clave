@@ -80,7 +80,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const usuarioActual = useMemo(
-    () => estado.usuarios.find((u) => u.id === estado.usuarioActualId) ?? estado.usuarios[0],
+    () =>
+      estado.usuarios.find((u) => u.id === estado.usuarioActualId) ??
+      (estado.usuarios[0] as Estado["usuarios"][number]),
     [estado],
   );
 
