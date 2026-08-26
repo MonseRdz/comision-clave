@@ -250,10 +250,10 @@ function Gastos() {
             </label>
             {f.sinCFDI ? (
               <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <Campo etiqueta="Justificación (obligatoria)" id="g-just">
+                <Campo etiqueta="Justificación del catálogo" id="g-just">
                   <Selector
                     id="g-just"
-                    value={f.justificacion}
+                    value={estado.justificacionesSinCFDI.includes(f.justificacion) ? f.justificacion : ""}
                     onChange={(e) => setF({ ...f, justificacion: e.target.value })}
                   >
                     <option value="">Selecciona una justificación…</option>
@@ -262,12 +262,12 @@ function Gastos() {
                     ))}
                   </Selector>
                 </Campo>
-                <Campo etiqueta="Detalle adicional" id="g-just2">
+                <Campo etiqueta="Justificación (obligatoria)" id="g-just2">
                   <AreaTexto
                     id="g-just2"
-                    value={f.justificacion === "" ? "" : undefined}
+                    value={f.justificacion}
                     onChange={(e) => setF({ ...f, justificacion: e.target.value })}
-                    placeholder="Puedes escribir una justificación distinta"
+                    placeholder="Ej. Transporte local"
                   />
                 </Campo>
               </div>

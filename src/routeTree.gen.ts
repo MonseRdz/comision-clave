@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as EventosRouteImport } from './routes/eventos'
+import { Route as GastosRouteImport } from './routes/gastos'
 import { Route as PresupuestosRouteImport } from './routes/presupuestos'
 import { Route as ReglasRouteImport } from './routes/reglas'
 
@@ -30,6 +31,11 @@ const EventosRoute = EventosRouteImport.update({
   path: '/eventos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GastosRoute = GastosRouteImport.update({
+  id: '/gastos',
+  path: '/gastos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PresupuestosRoute = PresupuestosRouteImport.update({
   id: '/presupuestos',
   path: '/presupuestos',
@@ -45,6 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/eventos': typeof EventosRoute
+  '/gastos': typeof GastosRoute
   '/presupuestos': typeof PresupuestosRoute
   '/reglas': typeof ReglasRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/eventos': typeof EventosRoute
+  '/gastos': typeof GastosRoute
   '/presupuestos': typeof PresupuestosRoute
   '/reglas': typeof ReglasRoute
 }
@@ -60,21 +68,31 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/eventos': typeof EventosRoute
+  '/gastos': typeof GastosRoute
   '/presupuestos': typeof PresupuestosRoute
   '/reglas': typeof ReglasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/eventos' | '/presupuestos' | '/reglas'
+  fullPaths:
+    '/' | '/admin' | '/eventos' | '/gastos' | '/presupuestos' | '/reglas'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/eventos' | '/presupuestos' | '/reglas'
-  id: '__root__' | '/' | '/admin' | '/eventos' | '/presupuestos' | '/reglas'
+  to: '/' | '/admin' | '/eventos' | '/gastos' | '/presupuestos' | '/reglas'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/eventos'
+    | '/gastos'
+    | '/presupuestos'
+    | '/reglas'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   EventosRoute: typeof EventosRoute
+  GastosRoute: typeof GastosRoute
   PresupuestosRoute: typeof PresupuestosRoute
   ReglasRoute: typeof ReglasRoute
 }
@@ -102,6 +120,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/gastos': {
+      id: '/gastos'
+      path: '/gastos'
+      fullPath: '/gastos'
+      preLoaderRoute: typeof GastosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/presupuestos': {
       id: '/presupuestos'
       path: '/presupuestos'
@@ -123,6 +148,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   EventosRoute: EventosRoute,
+  GastosRoute: GastosRoute,
   PresupuestosRoute: PresupuestosRoute,
   ReglasRoute: ReglasRoute,
 }
