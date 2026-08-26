@@ -11,10 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AprobacionRouteImport } from './routes/aprobacion'
 import { Route as EventosRouteImport } from './routes/eventos'
 import { Route as GastosRouteImport } from './routes/gastos'
 import { Route as PresupuestosRouteImport } from './routes/presupuestos'
 import { Route as ReglasRouteImport } from './routes/reglas'
+import { Route as RevisionRouteImport } from './routes/revision'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -24,6 +26,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AprobacionRoute = AprobacionRouteImport.update({
+  id: '/aprobacion',
+  path: '/aprobacion',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EventosRoute = EventosRouteImport.update({
@@ -46,55 +53,85 @@ const ReglasRoute = ReglasRouteImport.update({
   path: '/reglas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RevisionRoute = RevisionRouteImport.update({
+  id: '/revision',
+  path: '/revision',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/aprobacion': typeof AprobacionRoute
   '/eventos': typeof EventosRoute
   '/gastos': typeof GastosRoute
   '/presupuestos': typeof PresupuestosRoute
   '/reglas': typeof ReglasRoute
+  '/revision': typeof RevisionRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/aprobacion': typeof AprobacionRoute
   '/eventos': typeof EventosRoute
   '/gastos': typeof GastosRoute
   '/presupuestos': typeof PresupuestosRoute
   '/reglas': typeof ReglasRoute
+  '/revision': typeof RevisionRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/aprobacion': typeof AprobacionRoute
   '/eventos': typeof EventosRoute
   '/gastos': typeof GastosRoute
   '/presupuestos': typeof PresupuestosRoute
   '/reglas': typeof ReglasRoute
+  '/revision': typeof RevisionRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/admin' | '/eventos' | '/gastos' | '/presupuestos' | '/reglas'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/eventos' | '/gastos' | '/presupuestos' | '/reglas'
-  id:
-    | '__root__'
     | '/'
     | '/admin'
+    | '/aprobacion'
     | '/eventos'
     | '/gastos'
     | '/presupuestos'
     | '/reglas'
+    | '/revision'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/admin'
+    | '/aprobacion'
+    | '/eventos'
+    | '/gastos'
+    | '/presupuestos'
+    | '/reglas'
+    | '/revision'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/aprobacion'
+    | '/eventos'
+    | '/gastos'
+    | '/presupuestos'
+    | '/reglas'
+    | '/revision'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  AprobacionRoute: typeof AprobacionRoute
   EventosRoute: typeof EventosRoute
   GastosRoute: typeof GastosRoute
   PresupuestosRoute: typeof PresupuestosRoute
   ReglasRoute: typeof ReglasRoute
+  RevisionRoute: typeof RevisionRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -111,6 +148,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/aprobacion': {
+      id: '/aprobacion'
+      path: '/aprobacion'
+      fullPath: '/aprobacion'
+      preLoaderRoute: typeof AprobacionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/eventos': {
@@ -141,16 +185,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReglasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/revision': {
+      id: '/revision'
+      path: '/revision'
+      fullPath: '/revision'
+      preLoaderRoute: typeof RevisionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  AprobacionRoute: AprobacionRoute,
   EventosRoute: EventosRoute,
   GastosRoute: GastosRoute,
   PresupuestosRoute: PresupuestosRoute,
   ReglasRoute: ReglasRoute,
+  RevisionRoute: RevisionRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

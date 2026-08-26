@@ -64,10 +64,10 @@ export type Gasto = {
   observaciones: string;
   comisionadoId: string;
   creadoEn: string;
-  revisorId?: string;
-  dictaminadorId?: string;
-  motivoRechazo?: string;
-  folioDelegacion?: string;
+  revisorId?: string | undefined;
+  dictaminadorId?: string | undefined;
+  motivoRechazo?: string | undefined;
+  folioDelegacion?: string | undefined;
 };
 
 export type Delegacion = {
