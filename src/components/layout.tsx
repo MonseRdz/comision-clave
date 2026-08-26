@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useStore } from "@/lib/store";
 import { Selector } from "@/components/glass";
 import type { Rol } from "@/lib/types";
+import logoAsset from "@/assets/Ademeba_Logo.png.asset.json";
 
 type Enlace = { a: string; texto: string; roles: Rol[] };
 
@@ -33,12 +34,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <header className="glass-panel sticky top-0 z-40 m-3 rounded-2xl px-4 py-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span
-              aria-hidden="true"
-              className="grid h-10 w-10 place-items-center rounded-lg border-2 border-border-strong bg-primary text-lg font-black text-primary-foreground"
-            >
-              CG
-            </span>
+            <img
+              src={logoAsset.url}
+              alt="ADEMEBA"
+              className="h-10 w-10 rounded-lg border-2 border-border-strong bg-white object-contain p-0.5"
+            />
             <div>
               <p className="text-base font-black leading-tight">Comprobación de Gastos</p>
               <p className="text-xs text-muted-foreground">ADEMEBA · Justificación de recursos públicos</p>
