@@ -10,10 +10,10 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
-import { StoreProvider, useStore } from "../lib/store";
-import { Layout } from "../components/layout";
-import { ReglasPantalla } from "../components/reglas-pantalla";
+import { reportLovableError } from "@/lib/lovable-error-reporting";
+import { StoreProvider, useStore } from "@/lib/store";
+import { Layout } from "@/components/layout";
+import { ReglasPantalla } from "@/components/reglas-pantalla";
 
 function NotFoundComponent() {
   return (
