@@ -42,14 +42,14 @@ function Admin() {
   const [motivo, setMotivo] = useState("");
   const [aviso, setAviso] = useState("");
 
-  const esAdmin = usuarioActual.rol === "Administrador";
+  const esAdmin = usuarioActual.rol === "Contralor";
 
   if (!esAdmin) {
     return (
       <Panel className="mt-4">
         <TituloPanel>Acceso restringido</TituloPanel>
         <Aviso tono="alerta">
-          Solo el rol Administrador puede gestionar usuarios y configuración.
+          Solo el rol Contralor puede gestionar usuarios y configuración.
         </Aviso>
       </Panel>
     );

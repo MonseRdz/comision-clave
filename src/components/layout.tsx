@@ -7,21 +7,30 @@ import logoAsset from "@/assets/Ademeba_Logo.png.asset.json";
 type Enlace = { a: string; texto: string; roles: Rol[] };
 
 const ENLACES: Enlace[] = [
-  { a: "/", texto: "Tablero", roles: ["Director", "Contralor", "Administrador", "Revisor"] },
+  { a: "/", texto: "Tablero", roles: ["Director", "Contralor", "Revisor"] },
   { a: "/reglas", texto: "Reglas", roles: ["Comisionado"] },
-  { a: "/gastos", texto: "Registro de gastos", roles: ["Comisionado", "Administrador"] },
+  { a: "/gastos", texto: "Registro de gastos", roles: ["Comisionado", "Contralor"] },
   { a: "/revision", texto: "Validación técnica", roles: ["Revisor"] },
   { a: "/aprobacion", texto: "Aprobación definitiva", roles: ["Contralor", "Director"] },
-  { a: "/eventos", texto: "Eventos y participantes", roles: ["Administrador", "Contralor", "Director"] },
-  { a: "/presupuestos", texto: "Presupuestos", roles: ["Administrador", "Contralor", "Director"] },
-  { a: "/admin", texto: "Usuarios y configuración", roles: ["Administrador"] },
-  { a: "/reportes", texto: "Reportes y expediente", roles: ["Administrador", "Contralor", "Director", "Revisor"] },
+  { a: "/eventos", texto: "Eventos y participantes", roles: ["Contralor"] },
+  { a: "/presupuestos", texto: "Presupuestos", roles: ["Contralor", "Director"] },
+  { a: "/admin", texto: "Usuarios y configuración", roles: ["Contralor"] },
+  { a: "/reportes", texto: "Reportes y expediente", roles: ["Contralor", "Director", "Revisor"] },
 ];
 
+// El Director solo accede a estas consolas cuando el Contralor le delegó autoridad.
+const SOLO_CON_DELEGACION = ["/presupuestos", "/aprobacion"];
+
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { estado, setEstado, usuarioActual, registrar } = useStore();
+  const { estado, setEstado, usuarioActual, registrar, delegacionVigente } = useStore();
   const ruta = useRouterState({ select: (s) => s.location.pathname });
-  const enlaces = ENLACES.filter((e) => e.roles.includes(usuarioActual.rol));
+  const delegadoAlDirector =
+    usuarioActual.rol === "Director" && delegacionVigente?.paraId === usuarioActual.id;
+  const enlaces = ENLACES.filter(
+    (e) =>
+      e.roles.includes(usuarioActual.rol) &&
+      (usuarioActual.rol !== "Director" || delegadoAlDirector || !SOLO_CON_DELEGACION.includes(e.a)),
+  );
 
   return (
     <div className="min-h-screen">

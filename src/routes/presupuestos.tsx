@@ -32,7 +32,7 @@ export const Route = createFileRoute("/presupuestos")({
 });
 
 function Presupuestos() {
-  const { estado, setEstado, registrar } = useStore();
+  const { estado, setEstado, registrar, usuarioActual, delegacionVigente } = useStore();
   const comisionados = estado.usuarios.filter((u) => u.rol === "Comisionado");
   const [f, setF] = useState({
     eventoId: estado.eventos[0]?.id ?? "",
@@ -41,6 +41,23 @@ function Presupuestos() {
     responsableId: comisionados[0]?.id ?? "",
   });
   const [aviso, setAviso] = useState("");
+
+  const delegadoAlDirector =
+    usuarioActual.rol === "Director" && delegacionVigente?.paraId === usuarioActual.id;
+  const puedeAsignar = usuarioActual.rol === "Contralor" || delegadoAlDirector;
+
+  if (!puedeAsignar) {
+    return (
+      <Panel className="mt-4">
+        <TituloPanel>Acceso restringido</TituloPanel>
+        <Aviso tono="alerta">
+          {usuarioActual.rol === "Director"
+            ? "El Director solo puede asignar y aprobar presupuestos con una delegación de autoridad vigente del Contralor."
+            : "Solo el Contralor (o el Director con delegación vigente) puede asignar presupuestos."}
+        </Aviso>
+      </Panel>
+    );
+  }
 
   function asignar(ev: React.FormEvent) {
     ev.preventDefault();
