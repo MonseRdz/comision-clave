@@ -1,6 +1,6 @@
-export type Rol = "Contralor" | "Revisor" | "Administrador" | "Director" | "Comisionado";
+export type Rol = "Contralor" | "Revisor" | "Director" | "Comisionado";
 
-export const ROLES: Rol[] = ["Contralor", "Revisor", "Administrador", "Director", "Comisionado"];
+export const ROLES: Rol[] = ["Contralor", "Revisor", "Director", "Comisionado"];
 
 export type Usuario = {
   id: string;
