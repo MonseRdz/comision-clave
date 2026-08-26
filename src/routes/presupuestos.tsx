@@ -32,7 +32,7 @@ export const Route = createFileRoute("/presupuestos")({
 });
 
 function Presupuestos() {
-  const { estado, setEstado, registrar } = useStore();
+  const { estado, setEstado, registrar, usuarioActual, delegacionVigente } = useStore();
   const comisionados = estado.usuarios.filter((u) => u.rol === "Comisionado");
   const [f, setF] = useState({
     eventoId: estado.eventos[0]?.id ?? "",
