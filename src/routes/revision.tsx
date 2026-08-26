@@ -89,7 +89,30 @@ function Revision() {
                   </Etiqueta>
                 </Celda>
                 <Celda>
-                  {g.sinCFDI ? `Sin CFDI — ${g.justificacion}` : g.archivos.map((a) => a.nombre).join(", ") || "—"}
+                  {g.sinCFDI ? <p>Sin CFDI — {g.justificacion}</p> : null}
+                  {g.archivos.length ? (
+                    <ul className="space-y-1">
+                      {g.archivos.map((a) => (
+                        <li key={a.nombre}>
+                          {a.dataUrl ? (
+                            <a
+                              className="font-semibold underline"
+                              href={a.dataUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              download={a.nombre}
+                            >
+                              Ver o descargar {a.nombre}
+                            </a>
+                          ) : (
+                            <span>{a.nombre} (documento de ejemplo)</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-muted-foreground">Sin archivos adjuntos.</p>
+                  )}
                   <p className="mt-1 text-xs text-muted-foreground">
                     Participantes:{" "}
                     {g.participantesIds
