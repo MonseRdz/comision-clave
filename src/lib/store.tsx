@@ -42,7 +42,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const guardado = localStorage.getItem(CLAVE);
-      if (guardado) setEstadoRaw(JSON.parse(guardado) as Estado);
+      if (guardado) {
+        const previo = JSON.parse(guardado) as Estado;
+        // El rol Administrador se eliminó: sus facultades quedan en el Contralor.
+        const usuarios = previo.usuarios.filter((u) => (u.rol as string) !== "Administrador");
+        const usuarioActualId = usuarios.some((u) => u.id === previo.usuarioActualId)
+          ? previo.usuarioActualId
+          : (usuarios[0]?.id ?? previo.usuarioActualId);
+        setEstadoRaw({ ...previo, usuarios, usuarioActualId });
+      }
     } catch {
       /* estado por defecto */
     }
