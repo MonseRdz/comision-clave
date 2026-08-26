@@ -16,6 +16,7 @@ import { Route as EventosRouteImport } from './routes/eventos'
 import { Route as GastosRouteImport } from './routes/gastos'
 import { Route as PresupuestosRouteImport } from './routes/presupuestos'
 import { Route as ReglasRouteImport } from './routes/reglas'
+import { Route as ReportesRouteImport } from './routes/reportes'
 import { Route as RevisionRouteImport } from './routes/revision'
 
 const IndexRoute = IndexRouteImport.update({
@@ -53,6 +54,11 @@ const ReglasRoute = ReglasRouteImport.update({
   path: '/reglas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReportesRoute = ReportesRouteImport.update({
+  id: '/reportes',
+  path: '/reportes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RevisionRoute = RevisionRouteImport.update({
   id: '/revision',
   path: '/revision',
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/gastos': typeof GastosRoute
   '/presupuestos': typeof PresupuestosRoute
   '/reglas': typeof ReglasRoute
+  '/reportes': typeof ReportesRoute
   '/revision': typeof RevisionRoute
 }
 export interface FileRoutesByTo {
@@ -77,6 +84,7 @@ export interface FileRoutesByTo {
   '/gastos': typeof GastosRoute
   '/presupuestos': typeof PresupuestosRoute
   '/reglas': typeof ReglasRoute
+  '/reportes': typeof ReportesRoute
   '/revision': typeof RevisionRoute
 }
 export interface FileRoutesById {
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/gastos': typeof GastosRoute
   '/presupuestos': typeof PresupuestosRoute
   '/reglas': typeof ReglasRoute
+  '/reportes': typeof ReportesRoute
   '/revision': typeof RevisionRoute
 }
 export interface FileRouteTypes {
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
     | '/gastos'
     | '/presupuestos'
     | '/reglas'
+    | '/reportes'
     | '/revision'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/gastos'
     | '/presupuestos'
     | '/reglas'
+    | '/reportes'
     | '/revision'
   id:
     | '__root__'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
     | '/gastos'
     | '/presupuestos'
     | '/reglas'
+    | '/reportes'
     | '/revision'
   fileRoutesById: FileRoutesById
 }
@@ -131,6 +143,7 @@ export interface RootRouteChildren {
   GastosRoute: typeof GastosRoute
   PresupuestosRoute: typeof PresupuestosRoute
   ReglasRoute: typeof ReglasRoute
+  ReportesRoute: typeof ReportesRoute
   RevisionRoute: typeof RevisionRoute
 }
 
@@ -185,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReglasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reportes': {
+      id: '/reportes'
+      path: '/reportes'
+      fullPath: '/reportes'
+      preLoaderRoute: typeof ReportesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/revision': {
       id: '/revision'
       path: '/revision'
@@ -203,6 +223,7 @@ const rootRouteChildren: RootRouteChildren = {
   GastosRoute: GastosRoute,
   PresupuestosRoute: PresupuestosRoute,
   ReglasRoute: ReglasRoute,
+  ReportesRoute: ReportesRoute,
   RevisionRoute: RevisionRoute,
 }
 export const routeTree = rootRouteImport
