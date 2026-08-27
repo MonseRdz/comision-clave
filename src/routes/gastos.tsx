@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore, mxn, nuevoId, fechaCorta, esInmutable, hoyISO } from "@/lib/store";
-import type { Archivo, Gasto } from "@/lib/types";
-import { PAISES, lugarTexto } from "@/lib/paises";
+import type { Archivo, Escala, Gasto } from "@/lib/types";
+import { PAISES, rutaTexto } from "@/lib/paises";
 import {
   Panel,
   TituloPanel,
@@ -54,6 +54,7 @@ function Gastos() {
     destinoPais: "MEX",
     destinoCiudad: "",
   });
+  const [escalas, setEscalas] = useState<Escala[]>([]);
   const [participantes, setParticipantes] = useState<string[]>([]);
   const [archivos, setArchivos] = useState<Archivo[]>([]);
   const [pases, setPases] = useState<Record<string, Archivo>>({});
