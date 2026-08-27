@@ -1,3 +1,4 @@
+import { lugarTexto } from "@/lib/paises";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore, mxn, fechaCorta, diasDesde } from "@/lib/store";
@@ -113,6 +114,31 @@ function Revision() {
                   ) : (
                     <p className="text-muted-foreground">Sin archivos adjuntos.</p>
                   )}
+                  {g.origenPais || g.destinoPais ? (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Traslado: {lugarTexto(g.origenPais, g.origenCiudad)} →{" "}
+                      {lugarTexto(g.destinoPais, g.destinoCiudad)}
+                    </p>
+                  ) : null}
+                  {g.rubro === "Transporte"
+                    ? (() => {
+                        const nominales =
+                          estado.eventos.find((e) => e.id === g.eventoId)?.participantes ?? [];
+                        const faltan = nominales.filter(
+                          (p) => !g.archivos.some((a) => a.participanteId === p.id),
+                        );
+                        return faltan.length ? (
+                          <p className="mt-1 text-xs font-semibold">
+                            Evidencia incompleta: faltan pases de abordar de{" "}
+                            {faltan.map((p) => p.nombre).join(", ")}.
+                          </p>
+                        ) : (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Pases de abordar completos ({nominales.length}).
+                          </p>
+                        );
+                      })()
+                    : null}
                   <p className="mt-1 text-xs text-muted-foreground">
                     Participantes:{" "}
                     {g.participantesIds
