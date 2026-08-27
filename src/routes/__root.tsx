@@ -115,14 +115,12 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function Contenido() {
-  const { estado, usuarioActual, listo } = useStore();
-  if (!listo) {
-    return (
-      <Layout>
-        <p className="p-6 text-sm text-muted-foreground">Cargando…</p>
-      </Layout>
-    );
+  const { estado, usuarioActual, listo, acceso } = useStore();
+  if (!listo || acceso === "cargando") {
+    return <p className="p-6 text-sm text-muted-foreground">Cargando…</p>;
   }
+  if (acceso === "anonimo") return <AuthPantalla />;
+  if (acceso === "pendiente") return <PendientePantalla />;
   const debeAceptar =
     usuarioActual.rol === "Comisionado" &&
     !estado.aceptaciones.some(
