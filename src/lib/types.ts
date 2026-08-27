@@ -5,6 +5,7 @@ export const ROLES: Rol[] = ["Contralor", "Revisor", "Director", "Comisionado"];
 export type Usuario = {
   id: string;
   nombre: string;
+  email: string;
   rol: Rol;
   activo: boolean;
 };
