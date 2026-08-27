@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { useStore, mxn, nuevoId, fechaHora } from "@/lib/store";
+import { supabase } from "@/integrations/supabase/client";
+import { useStore, mxn, fechaHora } from "@/lib/store";
 import { ROLES, type Rol } from "@/lib/types";
 import {
   Panel,
@@ -21,12 +22,13 @@ export const Route = createFileRoute("/admin")({
       { title: "Usuarios y configuración | Comprobación de Gastos" },
       {
         name: "description",
-        content: "Alta de usuarios con rol, tope de gastos sin comprobante y catálogos maestros.",
+        content:
+          "Aprobación de solicitudes de acceso, asignación de roles, tope de gastos sin comprobante y catálogos maestros.",
       },
       { property: "og:title", content: "Usuarios y configuración | Comprobación de Gastos" },
       {
         property: "og:description",
-        content: "Administra roles, topes y catálogos de la comprobación de gastos.",
+        content: "Administra accesos, roles, topes y catálogos de la comprobación de gastos.",
       },
     ],
   }),
@@ -34,13 +36,13 @@ export const Route = createFileRoute("/admin")({
 });
 
 function Admin() {
-  const { estado, setEstado, registrar, usuarioActual } = useStore();
-  const [nombre, setNombre] = useState("");
-  const [rol, setRol] = useState<Rol>("Comisionado");
+  const { estado, setEstado, registrar, usuarioActual, perfiles, recargar } = useStore();
   const [tope, setTope] = useState(String(estado.topeSinComprobante));
   const [rubro, setRubro] = useState("");
   const [motivo, setMotivo] = useState("");
   const [aviso, setAviso] = useState("");
+  const [rolSolicitud, setRolSolicitud] = useState<Record<string, Rol>>({});
+  const [ocupado, setOcupado] = useState("");
 
   const esAdmin = usuarioActual.rol === "Contralor";
 
@@ -55,20 +57,60 @@ function Admin() {
     );
   }
 
-  function crearUsuario(ev: React.FormEvent) {
-    ev.preventDefault();
-    if (!nombre.trim()) return setAviso("Escribe el nombre del usuario.");
-    const u = { id: nuevoId("u"), nombre: nombre.trim(), rol, activo: true };
-    setEstado((e) => ({ ...e, usuarios: [...e.usuarios, u] }));
-    registrar("Alta de usuario", `Se creó a ${u.nombre} con rol ${u.rol}.`);
-    setAviso(`Usuario "${u.nombre}" creado con rol ${u.rol}.`);
-    setNombre("");
+  const solicitudes = perfiles.filter((p) => p.estatus === "Pendiente" || !p.rol);
+  const autorizados = perfiles.filter((p) => p.estatus !== "Pendiente" && p.rol);
+
+  async function aprobar(id: string, nombre: string) {
+    const rol = rolSolicitud[id] ?? "Comisionado";
+    setOcupado(id);
+    const { error: e1 } = await supabase.from("user_roles").insert({ user_id: id, role: rol });
+    const { error: e2 } = await supabase
+      .from("profiles")
+      .update({ estatus: "Aprobado" })
+      .eq("id", id);
+    setOcupado("");
+    if (e1 || e2) return setAviso(`No se pudo aprobar: ${(e1 ?? e2)?.message}`);
+    registrar("Aprobación de acceso", `Se autorizó a ${nombre} con rol ${rol}.`);
+    setAviso(`Acceso aprobado para ${nombre} con rol ${rol}. Ya puede iniciar sesión.`);
+    await recargar();
+  }
+
+  async function rechazar(id: string, nombre: string) {
+    setOcupado(id);
+    const { error } = await supabase.from("profiles").update({ estatus: "Rechazado" }).eq("id", id);
+    setOcupado("");
+    if (error) return setAviso(`No se pudo rechazar: ${error.message}`);
+    registrar("Rechazo de acceso", `Se rechazó la solicitud de ${nombre}.`);
+    setAviso(`Solicitud de ${nombre} rechazada.`);
+    await recargar();
+  }
+
+  async function cambiarRol(id: string, nombre: string, rol: Rol) {
+    setOcupado(id);
+    await supabase.from("user_roles").delete().eq("user_id", id);
+    const { error } = await supabase.from("user_roles").insert({ user_id: id, role: rol });
+    setOcupado("");
+    if (error) return setAviso(`No se pudo cambiar el rol: ${error.message}`);
+    registrar("Cambio de rol", `${nombre} ahora tiene el rol ${rol}.`);
+    setAviso(`${nombre} ahora es ${rol}.`);
+    await recargar();
+  }
+
+  async function cambiarEstatus(id: string, nombre: string, estatus: string) {
+    setOcupado(id);
+    const { error } = await supabase.from("profiles").update({ estatus }).eq("id", id);
+    setOcupado("");
+    if (error) return setAviso(`No se pudo actualizar: ${error.message}`);
+    registrar("Estatus de usuario", `${nombre} quedó en estatus ${estatus}.`);
+    setAviso(`${nombre} quedó en estatus ${estatus}.`);
+    await recargar();
   }
 
   function guardarTope(ev: React.FormEvent) {
     ev.preventDefault();
     const valor = Number(tope);
-    if (!Number.isFinite(valor) || valor <= 0) return setAviso("El tope debe ser un monto mayor a cero.");
+    if (!Number.isFinite(valor) || valor <= 0)
+      return setAviso("El tope debe ser un monto mayor a cero.");
     setEstado((e) => ({ ...e, topeSinComprobante: valor }));
     registrar("Configuración", `Tope de gastos sin comprobante fijado en ${mxn(valor)}.`);
     setAviso(`Tope sin factura actualizado a ${mxn(valor)}.`);
@@ -79,41 +121,103 @@ function Admin() {
       {aviso ? <Aviso>{aviso}</Aviso> : null}
 
       <Panel>
-        <TituloPanel sub="Alta de usuarios con rol dentro del proceso de comprobación.">
-          Usuarios
+        <TituloPanel sub="Personas que solicitaron acceso y esperan tu autorización y rol.">
+          Solicitudes de acceso{" "}
+          {solicitudes.length ? <Etiqueta tono="alerta">{solicitudes.length}</Etiqueta> : null}
         </TituloPanel>
-        <form onSubmit={crearUsuario} className="grid gap-3 md:grid-cols-[2fr_1fr_auto] md:items-end">
-          <Campo etiqueta="Nombre completo" id="nuevo-nombre">
-            <Entrada
-              id="nuevo-nombre"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              placeholder="Ej. Juan Entrenador"
-            />
-          </Campo>
-          <Campo etiqueta="Rol" id="nuevo-rol">
-            <Selector id="nuevo-rol" value={rol} onChange={(e) => setRol(e.target.value as Rol)}>
-              {ROLES.map((r) => (
-                <option key={r}>{r}</option>
-              ))}
-            </Selector>
-          </Campo>
-          <Boton type="submit">Crear usuario</Boton>
-        </form>
-
-        <div className="mt-4">
-          <Tabla cabeceras={["Nombre", "Rol", "Estatus"]}>
-            {estado.usuarios.map((u) => (
-              <tr key={u.id}>
-                <Celda>{u.nombre}</Celda>
-                <Celda>{u.rol}</Celda>
+        {solicitudes.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No hay solicitudes pendientes.</p>
+        ) : (
+          <Tabla cabeceras={["Nombre", "Correo", "Rol a asignar", "Acciones"]}>
+            {solicitudes.map((p) => (
+              <tr key={p.id}>
+                <Celda>{p.nombre}</Celda>
+                <Celda>{p.email}</Celda>
                 <Celda>
-                  <Etiqueta tono={u.activo ? "ok" : "neutro"}>{u.activo ? "Activo" : "Inactivo"}</Etiqueta>
+                  <Selector
+                    aria-label={`Rol para ${p.nombre}`}
+                    value={rolSolicitud[p.id] ?? "Comisionado"}
+                    onChange={(e) =>
+                      setRolSolicitud((r) => ({ ...r, [p.id]: e.target.value as Rol }))
+                    }
+                  >
+                    {ROLES.map((r) => (
+                      <option key={r}>{r}</option>
+                    ))}
+                  </Selector>
+                </Celda>
+                <Celda>
+                  <div className="flex flex-wrap gap-2">
+                    <Boton
+                      type="button"
+                      disabled={ocupado === p.id}
+                      onClick={() => void aprobar(p.id, p.nombre)}
+                    >
+                      Aprobar
+                    </Boton>
+                    <Boton
+                      type="button"
+                      variante="neutro"
+                      disabled={ocupado === p.id}
+                      onClick={() => void rechazar(p.id, p.nombre)}
+                    >
+                      Rechazar
+                    </Boton>
+                  </div>
                 </Celda>
               </tr>
             ))}
           </Tabla>
-        </div>
+        )}
+      </Panel>
+
+      <Panel>
+        <TituloPanel sub="Usuarios autorizados y su rol dentro del proceso de comprobación.">
+          Usuarios
+        </TituloPanel>
+        <Tabla cabeceras={["Nombre", "Correo", "Rol", "Estatus", "Acción"]}>
+          {autorizados.map((p) => (
+            <tr key={p.id}>
+              <Celda>{p.nombre}</Celda>
+              <Celda>{p.email}</Celda>
+              <Celda>
+                <Selector
+                  aria-label={`Rol de ${p.nombre}`}
+                  value={p.rol ?? "Comisionado"}
+                  disabled={p.id === usuarioActual.id}
+                  onChange={(e) => void cambiarRol(p.id, p.nombre, e.target.value as Rol)}
+                >
+                  {ROLES.map((r) => (
+                    <option key={r}>{r}</option>
+                  ))}
+                </Selector>
+              </Celda>
+              <Celda>
+                <Etiqueta tono={p.estatus === "Aprobado" ? "ok" : "neutro"}>{p.estatus}</Etiqueta>
+              </Celda>
+              <Celda>
+                {p.id === usuarioActual.id ? (
+                  <span className="text-sm text-muted-foreground">Sesión actual</span>
+                ) : (
+                  <Boton
+                    type="button"
+                    variante="neutro"
+                    disabled={ocupado === p.id}
+                    onClick={() =>
+                      void cambiarEstatus(
+                        p.id,
+                        p.nombre,
+                        p.estatus === "Aprobado" ? "Rechazado" : "Aprobado",
+                      )
+                    }
+                  >
+                    {p.estatus === "Aprobado" ? "Suspender" : "Reactivar"}
+                  </Boton>
+                )}
+              </Celda>
+            </tr>
+          ))}
+        </Tabla>
       </Panel>
 
       <Panel>

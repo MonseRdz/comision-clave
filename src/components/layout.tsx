@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useStore } from "@/lib/store";
-import { Selector } from "@/components/glass";
+import { Boton, Etiqueta, Aviso } from "@/components/glass";
 import type { Rol } from "@/lib/types";
 import logoAsset from "@/assets/Ademeba_Logo.png.asset.json";
 
@@ -22,7 +22,8 @@ const ENLACES: Enlace[] = [
 const SOLO_CON_DELEGACION = ["/presupuestos", "/aprobacion"];
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { estado, setEstado, usuarioActual, registrar, delegacionVigente } = useStore();
+  const { usuarioActual, delegacionVigente, perfiles, errorSync, cerrarSesion } = useStore();
+  const pendientes = perfiles.filter((p) => p.estatus === "Pendiente" || !p.rol).length;
   const ruta = useRouterState({ select: (s) => s.location.pathname });
   const delegadoAlDirector =
     usuarioActual.rol === "Director" && delegacionVigente?.paraId === usuarioActual.id;
@@ -53,29 +54,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <p className="text-xs text-muted-foreground">ADEMEBA · Justificación de recursos públicos</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <label htmlFor="usuario-activo" className="text-sm font-semibold">
-              Sesión:
-            </label>
-            <Selector
-              id="usuario-activo"
-              className="w-auto"
-              value={estado.usuarioActualId}
-              onChange={(ev) => {
-                const id = ev.target.value;
-                setEstado((e) => ({ ...e, usuarioActualId: id }));
-                const u = estado.usuarios.find((x) => x.id === id);
-                registrar("Cambio de sesión", `Ingresó ${u?.nombre} (${u?.rol}).`);
-              }}
-            >
-              {estado.usuarios
-                .filter((u) => u.activo)
-                .map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.nombre} — {u.rol}
-                  </option>
-                ))}
-            </Selector>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="text-right">
+              <p className="text-sm font-bold leading-tight">{usuarioActual.nombre}</p>
+              <p className="text-xs text-muted-foreground">
+                {usuarioActual.rol} · {usuarioActual.email}
+              </p>
+            </div>
+            {usuarioActual.rol === "Contralor" && pendientes > 0 ? (
+              <Link to="/admin">
+                <Etiqueta tono="alerta">
+                  {pendientes} solicitud{pendientes === 1 ? "" : "es"} de acceso
+                </Etiqueta>
+              </Link>
+            ) : null}
+            <Boton type="button" variante="neutro" onClick={() => void cerrarSesion()}>
+              Cerrar sesión
+            </Boton>
           </div>
         </div>
         {enlaces.length > 1 ? (
@@ -99,6 +94,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
         ) : null}
       </header>
       <main id="contenido" className="mx-auto max-w-6xl px-3 pb-16">
+        {errorSync ? (
+          <div className="pt-4">
+            <Aviso tono="alerta">{errorSync}</Aviso>
+          </div>
+        ) : null}
         {children}
       </main>
     </div>
