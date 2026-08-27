@@ -244,6 +244,25 @@ function Gastos() {
       {error ? <Aviso tono="error">{error}</Aviso> : null}
       {aviso ? <Aviso>{aviso}</Aviso> : null}
 
+      <ExtraccionIA
+        onConfirmar={({ campos, archivo, meta }) => {
+          setF((prev) => ({
+            ...prev,
+            proveedor: campos.proveedor || prev.proveedor,
+            monto: campos.monto || prev.monto,
+            moneda: (["MXN", "USD", "EUR"].includes(campos.moneda)
+              ? campos.moneda
+              : prev.moneda) as Gasto["moneda"],
+            tipoCambio: campos.moneda === "MXN" ? "1" : prev.tipoCambio,
+            rubro: campos.rubro || prev.rubro,
+          }));
+          setArchivos((a) => (a.some((x) => x.nombre === archivo.nombre) ? a : [...a, archivo]));
+          setIaMeta(meta);
+          setError("");
+        }}
+      />
+
+
       <Panel>
         <TituloPanel sub="Factura CFDI, evidencia nominal, gastos sin comprobante y moneda extranjera.">
           Registrar comprobación
