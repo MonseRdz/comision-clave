@@ -62,6 +62,8 @@ function Gastos() {
   const [pases, setPases] = useState<Record<string, Archivo>>({});
   const [aviso, setAviso] = useState("");
   const [error, setError] = useState("");
+  const [iaMeta, setIaMeta] = useState<IaExtraccion | null>(null);
+
   const [detalle, setDetalle] = useState<string | null>(null);
   const [edicion, setEdicion] = useState<{ id: string; monto: string } | null>(null);
 
