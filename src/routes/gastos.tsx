@@ -206,7 +206,9 @@ function Gastos() {
     setParticipantes([]);
     setArchivos([]);
     setPases({});
+    setIaMeta(null);
   }
+
 
   function guardarEdicion(g: Gasto) {
     if (esInmutable(g)) {
