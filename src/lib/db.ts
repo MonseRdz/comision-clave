@@ -220,7 +220,9 @@ const TABLAS: Tabla[] = [
         dictaminador_id: uuidONull(g.dictaminadorId ?? ""),
         motivo_rechazo: g.motivoRechazo ?? null,
         folio_delegacion: g.folioDelegacion ?? null,
+        ia_extraccion: g.iaExtraccion ?? {},
       })),
+
   },
   {
     nombre: "bitacora",
