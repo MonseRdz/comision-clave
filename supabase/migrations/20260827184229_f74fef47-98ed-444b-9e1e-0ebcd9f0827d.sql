@@ -1,0 +1,5 @@
+ALTER TABLE public.gastos
+  ADD COLUMN IF NOT EXISTS origen_pais text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS origen_ciudad text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS destino_pais text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS destino_ciudad text NOT NULL DEFAULT '';

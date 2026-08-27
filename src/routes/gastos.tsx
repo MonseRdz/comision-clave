@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore, mxn, nuevoId, fechaCorta, esInmutable, hoyISO } from "@/lib/store";
 import type { Archivo, Gasto } from "@/lib/types";
+import { PAISES, lugarTexto } from "@/lib/paises";
 import {
   Panel,
   TituloPanel,
@@ -48,18 +49,43 @@ function Gastos() {
     tipoCambio: "1",
     sinCFDI: false,
     justificacion: "",
+    origenPais: "MEX",
+    origenCiudad: "",
+    destinoPais: "MEX",
+    destinoCiudad: "",
   });
   const [participantes, setParticipantes] = useState<string[]>([]);
   const [archivos, setArchivos] = useState<Archivo[]>([]);
+  const [pases, setPases] = useState<Record<string, Archivo>>({});
   const [aviso, setAviso] = useState("");
   const [error, setError] = useState("");
   const [detalle, setDetalle] = useState<string | null>(null);
   const [edicion, setEdicion] = useState<{ id: string; monto: string } | null>(null);
 
   const evento = estado.eventos.find((e) => e.id === f.eventoId);
+  const esTransporte = f.rubro === "Transporte";
+  const nominales = evento?.participantes ?? [];
+  const faltanPases = esTransporte ? nominales.filter((p) => !pases[p.id]) : [];
   const monto = Number(f.monto) || 0;
   const tc = f.moneda === "MXN" ? 1 : Number(f.tipoCambio) || 0;
   const montoMXN = Math.round(monto * tc * 100) / 100;
+
+  function leerArchivo(file: File): Promise<Archivo> {
+    return new Promise<Archivo>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () =>
+        resolve({ nombre: file.name, tipo: file.type || "archivo", dataUrl: String(reader.result) });
+      reader.onerror = () => resolve({ nombre: file.name, tipo: file.type || "archivo", dataUrl: "" });
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function cargarPase(participanteId: string, lista: FileList | null) {
+    const file = lista?.[0];
+    if (!file) return;
+    const leido = await leerArchivo(file);
+    setPases((prev) => ({ ...prev, [participanteId]: { ...leido, participanteId } }));
+  }
 
   async function cargarArchivos(lista: FileList | null) {
     if (!lista) return;
@@ -95,6 +121,20 @@ function Gastos() {
       return setError("Adjunta la factura (XML/PDF) o marca el gasto como Sin CFDI.");
     }
 
+    const avisosPendientes: string[] = [];
+    if (esTransporte) {
+      if (!f.origenPais || !f.origenCiudad.trim() || !f.destinoPais || !f.destinoCiudad.trim())
+        avisosPendientes.push("faltan datos completos de Origen y Destino");
+      if (faltanPases.length)
+        avisosPendientes.push(
+          `faltan pases de abordar de: ${faltanPases.map((p) => p.nombre).join(", ")}`,
+        );
+    }
+
+    const adjuntos: Archivo[] = esTransporte
+      ? [...archivos, ...nominales.map((p) => pases[p.id]).filter((a): a is Archivo => Boolean(a))]
+      : archivos;
+
     const g: Gasto = {
       id: nuevoId("g"),
       eventoId: f.eventoId,
@@ -106,8 +146,12 @@ function Gastos() {
       montoMXN,
       sinCFDI: f.sinCFDI,
       justificacion: f.justificacion.trim(),
+      origenPais: esTransporte ? f.origenPais : "",
+      origenCiudad: esTransporte ? f.origenCiudad.trim() : "",
+      destinoPais: esTransporte ? f.destinoPais : "",
+      destinoCiudad: esTransporte ? f.destinoCiudad.trim() : "",
       participantesIds: participantes,
-      archivos,
+      archivos: adjuntos,
       estatus: "Registrado",
       observaciones: "",
       comisionadoId: usuarioActual.id,
@@ -119,10 +163,25 @@ function Gastos() {
       `${g.proveedor} por ${mxn(g.montoMXN)} (${g.rubro}) ${g.sinCFDI ? "sin CFDI" : "con CFDI"}.`,
     );
     setError("");
-    setAviso(`Gasto de ${g.proveedor} registrado por ${mxn(g.montoMXN)}.`);
-    setF({ ...f, proveedor: "", monto: "", justificacion: "", sinCFDI: false, moneda: "MXN", tipoCambio: "1" });
+    setAviso(
+      avisosPendientes.length
+        ? `Gasto de ${g.proveedor} registrado por ${mxn(g.montoMXN)}, con evidencia incompleta: ${avisosPendientes.join("; ")}. El Revisor lo verá marcado.`
+        : `Gasto de ${g.proveedor} registrado por ${mxn(g.montoMXN)}.`,
+    );
+    setF({
+      ...f,
+      proveedor: "",
+      monto: "",
+      justificacion: "",
+      sinCFDI: false,
+      moneda: "MXN",
+      tipoCambio: "1",
+      origenCiudad: "",
+      destinoCiudad: "",
+    });
     setParticipantes([]);
     setArchivos([]);
+    setPases({});
   }
 
   function guardarEdicion(g: Gasto) {
@@ -171,6 +230,7 @@ function Gastos() {
               onChange={(e) => {
                 setF({ ...f, eventoId: e.target.value });
                 setParticipantes([]);
+                setPases({});
               }}
             >
               {estado.eventos.map((e) => (
@@ -236,6 +296,80 @@ function Gastos() {
           <div className="md:col-span-3">
             <Aviso>Equivalente en pesos: <strong>{mxn(montoMXN)}</strong></Aviso>
           </div>
+
+          {esTransporte ? (
+            <fieldset className="md:col-span-3 rounded-lg border-2 border-border-strong p-3">
+              <legend className="px-1 text-sm font-semibold">Traslado (rubro Transporte)</legend>
+              <div className="grid gap-3 md:grid-cols-2">
+                <Campo etiqueta="País de origen" id="g-op">
+                  <Selector id="g-op" value={f.origenPais} onChange={(e) => setF({ ...f, origenPais: e.target.value })}>
+                    {PAISES.map((p) => (
+                      <option key={p.clave} value={p.clave}>
+                        {p.clave} — {p.nombre}
+                      </option>
+                    ))}
+                  </Selector>
+                </Campo>
+                <Campo etiqueta="Ciudad de origen" id="g-oc">
+                  <Entrada
+                    id="g-oc"
+                    value={f.origenCiudad}
+                    onChange={(e) => setF({ ...f, origenCiudad: e.target.value })}
+                    placeholder="Ej. Ciudad de México"
+                  />
+                </Campo>
+                <Campo etiqueta="País de destino" id="g-dp">
+                  <Selector id="g-dp" value={f.destinoPais} onChange={(e) => setF({ ...f, destinoPais: e.target.value })}>
+                    {PAISES.map((p) => (
+                      <option key={p.clave} value={p.clave}>
+                        {p.clave} — {p.nombre}
+                      </option>
+                    ))}
+                  </Selector>
+                </Campo>
+                <Campo etiqueta="Ciudad de destino" id="g-dc">
+                  <Entrada
+                    id="g-dc"
+                    value={f.destinoCiudad}
+                    onChange={(e) => setF({ ...f, destinoCiudad: e.target.value })}
+                    placeholder="Ej. Hermosillo"
+                  />
+                </Campo>
+              </div>
+
+              <div className="mt-4">
+                <p className="text-sm font-semibold">Pases de abordar por participante del evento</p>
+                <p className="text-sm text-muted-foreground">
+                  Carga el pase de abordar de cada participante de la lista nominal. Si falta alguno, el gasto se
+                  registra marcado como evidencia incompleta.
+                </p>
+                <ul className="mt-2 grid gap-2">
+                  {nominales.length ? (
+                    nominales.map((p) => (
+                      <li
+                        key={p.id}
+                        className="grid gap-2 rounded-md border-2 border-border-strong bg-glass-strong p-2 md:grid-cols-[1fr_auto] md:items-center"
+                      >
+                        <Campo etiqueta={`Pase de abordar de ${p.nombre}`} id={`pase-${p.id}`}>
+                          <input
+                            id={`pase-${p.id}`}
+                            type="file"
+                            onChange={(e) => cargarPase(p.id, e.target.files)}
+                            className="w-full rounded-md border-2 border-border-strong bg-input px-3 py-2 text-sm"
+                          />
+                        </Campo>
+                        <Etiqueta tono={pases[p.id] ? "ok" : "alerta"}>
+                          {pases[p.id]?.nombre ?? "Pendiente"}
+                        </Etiqueta>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="text-sm text-muted-foreground">El evento no tiene lista nominal cargada.</li>
+                  )}
+                </ul>
+              </div>
+            </fieldset>
+          ) : null}
 
           <fieldset className="md:col-span-3 rounded-lg border-2 border-border-strong p-3">
             <legend className="px-1 text-sm font-semibold">Comprobante fiscal</legend>
@@ -409,6 +543,12 @@ function Gastos() {
                     ) : (
                       <li className="text-muted-foreground">Sin archivos adjuntos.</li>
                     )}
+                    {g.origenPais || g.destinoPais ? (
+                      <li className="text-muted-foreground">
+                        Traslado: {lugarTexto(g.origenPais, g.origenCiudad)} →{" "}
+                        {lugarTexto(g.destinoPais, g.destinoCiudad)}
+                      </li>
+                    ) : null}
                     <li className="text-muted-foreground">
                       Participantes:{" "}
                       {g.participantesIds

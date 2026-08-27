@@ -160,6 +160,8 @@ export type Database = {
           archivos: Json
           comisionado_id: string | null
           creado_en: string
+          destino_ciudad: string
+          destino_pais: string
           dictaminador_id: string | null
           estatus: string
           evento_id: string
@@ -171,6 +173,8 @@ export type Database = {
           monto_mxn: number
           motivo_rechazo: string | null
           observaciones: string
+          origen_ciudad: string
+          origen_pais: string
           participantes_ids: string[]
           proveedor: string
           revisor_id: string | null
@@ -182,6 +186,8 @@ export type Database = {
           archivos?: Json
           comisionado_id?: string | null
           creado_en?: string
+          destino_ciudad?: string
+          destino_pais?: string
           dictaminador_id?: string | null
           estatus?: string
           evento_id: string
@@ -193,6 +199,8 @@ export type Database = {
           monto_mxn?: number
           motivo_rechazo?: string | null
           observaciones?: string
+          origen_ciudad?: string
+          origen_pais?: string
           participantes_ids?: string[]
           proveedor?: string
           revisor_id?: string | null
@@ -204,6 +212,8 @@ export type Database = {
           archivos?: Json
           comisionado_id?: string | null
           creado_en?: string
+          destino_ciudad?: string
+          destino_pais?: string
           dictaminador_id?: string | null
           estatus?: string
           evento_id?: string
@@ -215,6 +225,8 @@ export type Database = {
           monto_mxn?: number
           motivo_rechazo?: string | null
           observaciones?: string
+          origen_ciudad?: string
+          origen_pais?: string
           participantes_ids?: string[]
           proveedor?: string
           revisor_id?: string | null
