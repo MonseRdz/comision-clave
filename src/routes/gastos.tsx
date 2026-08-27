@@ -168,7 +168,19 @@ function Gastos() {
       comisionadoId: usuarioActual.id,
       creadoEn: hoyISO(),
     };
+    if (iaMeta)
+      g.iaExtraccion = {
+        ...iaMeta,
+        confirmado: {
+          ...iaMeta.confirmado,
+          proveedor: g.proveedor,
+          monto: String(g.monto),
+          moneda: g.moneda,
+          rubro: g.rubro,
+        },
+      };
     setEstado((e) => ({ ...e, gastos: [g, ...e.gastos] }));
+
     registrar(
       "Registro de gasto",
       `${g.proveedor} por ${mxn(g.montoMXN)} (${g.rubro}) ${g.sinCFDI ? "sin CFDI" : "con CFDI"}.`,
