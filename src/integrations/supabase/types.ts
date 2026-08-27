@@ -167,6 +167,7 @@ export type Database = {
           estatus: string
           evento_id: string
           folio_delegacion: string | null
+          ia_extraccion: Json
           id: string
           justificacion: string
           moneda: string
@@ -194,6 +195,7 @@ export type Database = {
           estatus?: string
           evento_id: string
           folio_delegacion?: string | null
+          ia_extraccion?: Json
           id: string
           justificacion?: string
           moneda?: string
@@ -221,6 +223,7 @@ export type Database = {
           estatus?: string
           evento_id?: string
           folio_delegacion?: string | null
+          ia_extraccion?: Json
           id?: string
           justificacion?: string
           moneda?: string
