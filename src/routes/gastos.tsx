@@ -64,6 +64,7 @@ function Gastos() {
   const [error, setError] = useState("");
   const [iaMeta, setIaMeta] = useState<IaExtraccion | null>(null);
 
+
   const [detalle, setDetalle] = useState<string | null>(null);
   const [edicion, setEdicion] = useState<{ id: string; monto: string } | null>(null);
 
