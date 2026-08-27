@@ -42,3 +42,14 @@ export const nombrePais = (clave: string) =>
 
 export const lugarTexto = (clave: string, ciudad: string) =>
   clave ? `${ciudad ? `${ciudad}, ` : ""}${nombrePais(clave)} (${clave})` : "";
+
+/** Texto de la ruta completa: origen → escalas → destino. */
+export const rutaTexto = (
+  origen: { pais: string; ciudad: string },
+  escalas: { pais: string; ciudad: string }[],
+  destino: { pais: string; ciudad: string },
+) =>
+  [origen, ...escalas, destino]
+    .map((t) => lugarTexto(t.pais, t.ciudad))
+    .filter(Boolean)
+    .join(" → ");

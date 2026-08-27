@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore, mxn, nuevoId, fechaCorta, esInmutable, hoyISO } from "@/lib/store";
-import type { Archivo, Gasto } from "@/lib/types";
-import { PAISES, lugarTexto } from "@/lib/paises";
+import type { Archivo, Escala, Gasto } from "@/lib/types";
+import { PAISES, rutaTexto } from "@/lib/paises";
 import {
   Panel,
   TituloPanel,
@@ -54,6 +54,7 @@ function Gastos() {
     destinoPais: "MEX",
     destinoCiudad: "",
   });
+  const [escalas, setEscalas] = useState<Escala[]>([]);
   const [participantes, setParticipantes] = useState<string[]>([]);
   const [archivos, setArchivos] = useState<Archivo[]>([]);
   const [pases, setPases] = useState<Record<string, Archivo>>({});
@@ -150,6 +151,11 @@ function Gastos() {
       origenCiudad: esTransporte ? f.origenCiudad.trim() : "",
       destinoPais: esTransporte ? f.destinoPais : "",
       destinoCiudad: esTransporte ? f.destinoCiudad.trim() : "",
+      escalas: esTransporte
+        ? escalas
+            .filter((x) => x.pais)
+            .map((x) => ({ pais: x.pais, ciudad: x.ciudad.trim() }))
+        : [],
       participantesIds: participantes,
       archivos: adjuntos,
       estatus: "Registrado",
@@ -179,6 +185,7 @@ function Gastos() {
       origenCiudad: "",
       destinoCiudad: "",
     });
+    setEscalas([]);
     setParticipantes([]);
     setArchivos([]);
     setPases({});
@@ -335,6 +342,77 @@ function Gastos() {
                     placeholder="Ej. Hermosillo"
                   />
                 </Campo>
+              </div>
+
+              <div className="mt-4">
+                <p className="text-sm font-semibold">Escalas o paradas intermedias</p>
+                <p className="text-sm text-muted-foreground">
+                  Agrega las escalas del traslado entre el origen y el destino, en el orden del recorrido.
+                </p>
+                <ul className="mt-2 grid gap-3">
+                  {escalas.map((es, i) => (
+                    <li
+                      key={i}
+                      className="grid gap-3 rounded-md border-2 border-border-strong p-3 md:grid-cols-[1fr_1fr_auto] md:items-end"
+                    >
+                      <Campo etiqueta={`País de la escala ${i + 1}`} id={`g-ep-${i}`}>
+                        <Selector
+                          id={`g-ep-${i}`}
+                          value={es.pais}
+                          onChange={(e) =>
+                            setEscalas((prev) =>
+                              prev.map((x, j) => (j === i ? { ...x, pais: e.target.value } : x)),
+                            )
+                          }
+                        >
+                          {PAISES.map((p) => (
+                            <option key={p.clave} value={p.clave}>
+                              {p.clave} — {p.nombre}
+                            </option>
+                          ))}
+                        </Selector>
+                      </Campo>
+                      <Campo etiqueta={`Ciudad de la escala ${i + 1}`} id={`g-ec-${i}`}>
+                        <Entrada
+                          id={`g-ec-${i}`}
+                          value={es.ciudad}
+                          onChange={(e) =>
+                            setEscalas((prev) =>
+                              prev.map((x, j) => (j === i ? { ...x, ciudad: e.target.value } : x)),
+                            )
+                          }
+                          placeholder="Ej. Guadalajara"
+                        />
+                      </Campo>
+                      <Boton
+                        type="button"
+                        variante="neutro"
+                        onClick={() => setEscalas((prev) => prev.filter((_, j) => j !== i))}
+                      >
+                        Quitar escala {i + 1}
+                      </Boton>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-3">
+                  <Boton
+                    type="button"
+                    variante="neutro"
+                    onClick={() => setEscalas((prev) => [...prev, { pais: "MEX", ciudad: "" }])}
+                  >
+                    {escalas.length === 0 ? "Agregar escala" : "Agregar otra escala"}
+                  </Boton>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Ruta capturada:{" "}
+                  <strong>
+                    {rutaTexto(
+                      { pais: f.origenPais, ciudad: f.origenCiudad },
+                      escalas,
+                      { pais: f.destinoPais, ciudad: f.destinoCiudad },
+                    )}
+                  </strong>
+                </p>
               </div>
 
               <div className="mt-4">
@@ -545,8 +623,12 @@ function Gastos() {
                     )}
                     {g.origenPais || g.destinoPais ? (
                       <li className="text-muted-foreground">
-                        Traslado: {lugarTexto(g.origenPais, g.origenCiudad)} →{" "}
-                        {lugarTexto(g.destinoPais, g.destinoCiudad)}
+                        Traslado:{" "}
+                        {rutaTexto(
+                          { pais: g.origenPais, ciudad: g.origenCiudad },
+                          g.escalas ?? [],
+                          { pais: g.destinoPais, ciudad: g.destinoCiudad },
+                        )}
                       </li>
                     ) : null}
                     <li className="text-muted-foreground">

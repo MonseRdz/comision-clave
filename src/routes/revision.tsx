@@ -1,4 +1,4 @@
-import { lugarTexto } from "@/lib/paises";
+import { rutaTexto } from "@/lib/paises";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore, mxn, fechaCorta, diasDesde } from "@/lib/store";
@@ -116,8 +116,13 @@ function Revision() {
                   )}
                   {g.origenPais || g.destinoPais ? (
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Traslado: {lugarTexto(g.origenPais, g.origenCiudad)} →{" "}
-                      {lugarTexto(g.destinoPais, g.destinoCiudad)}
+                      Traslado:{" "}
+                      {rutaTexto(
+                        { pais: g.origenPais, ciudad: g.origenCiudad },
+                        g.escalas ?? [],
+                        { pais: g.destinoPais, ciudad: g.destinoCiudad },
+                      )}
+                      {(g.escalas?.length ?? 0) > 0 ? ` · ${g.escalas.length} escala(s)` : ""}
                     </p>
                   ) : null}
                   {g.rubro === "Transporte"
