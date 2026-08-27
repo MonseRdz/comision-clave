@@ -14,6 +14,7 @@ import { reportLovableError } from "@/lib/lovable-error-reporting";
 import { StoreProvider, useStore } from "@/lib/store";
 import { Layout } from "@/components/layout";
 import { ReglasPantalla } from "@/components/reglas-pantalla";
+import { AuthPantalla, PendientePantalla } from "@/components/auth-pantalla";
 
 function NotFoundComponent() {
   return (
