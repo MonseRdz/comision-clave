@@ -94,7 +94,10 @@ export async function cargarDatos(): Promise<DatosOperacion> {
       if (g.dictaminador_id) base.dictaminadorId = g.dictaminador_id;
       if (g.motivo_rechazo) base.motivoRechazo = g.motivo_rechazo;
       if (g.folio_delegacion) base.folioDelegacion = g.folio_delegacion;
+      const ia = (g as { ia_extraccion?: unknown }).ia_extraccion as Gasto["iaExtraccion"] | undefined;
+      if (ia && Object.keys(ia).length) base.iaExtraccion = ia;
       return base;
+
     }),
     delegaciones: (delegaciones.data ?? []).map((d) => ({
       folio: d.folio,
