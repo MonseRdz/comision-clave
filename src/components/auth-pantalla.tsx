@@ -28,7 +28,7 @@ function Encabezado({ sub }: { sub: string }) {
 }
 
 export function AuthPantalla() {
-  const [modo, setModo] = useState<"entrar" | "solicitar">("entrar");
+  const [modo, setModo] = useState<"entrar" | "solicitar" | "recuperar">("entrar");
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,6 +41,25 @@ export function AuthPantalla() {
     setError("");
     setAviso("");
 
+    if (modo === "recuperar") {
+      const correo = z.string().trim().email().max(255).safeParse(email);
+      if (!correo.success) return setError("Correo electrónico inválido.");
+      setOcupado(true);
+      try {
+        const { error: err } = await supabase.auth.resetPasswordForEmail(correo.data, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (err) setError(`No fue posible enviar el correo: ${err.message}`);
+        else
+          setAviso(
+            "Si el correo está registrado, recibirás un enlace para definir una nueva contraseña.",
+          );
+      } finally {
+        setOcupado(false);
+      }
+      return;
+    }
+
     const datos = esquema.safeParse({
       nombre: modo === "solicitar" ? nombre : "Sesión",
       email,
@@ -49,6 +68,7 @@ export function AuthPantalla() {
     if (!datos.success) return setError(datos.error.issues[0]?.message ?? "Datos inválidos.");
 
     setOcupado(true);
+
     try {
       if (modo === "entrar") {
         const { error: err } = await supabase.auth.signInWithPassword({
