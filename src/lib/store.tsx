@@ -30,7 +30,16 @@ type Ctx = {
   cerrarSesion: () => Promise<void>;
 };
 
-const StoreContext = createContext<Ctx | null>(null);
+// Conserva una sola identidad del contexto aunque Vite vuelva a evaluar este
+// módulo durante HMR. Sin esto, un Provider antiguo y un useStore recién
+// cargado pueden apuntar temporalmente a contextos distintos.
+const STORE_CONTEXT_KEY = Symbol.for("ademeba.store-context");
+const contextoGlobal = globalThis as typeof globalThis & {
+  [STORE_CONTEXT_KEY]?: ReturnType<typeof createContext<Ctx | null>>;
+};
+const StoreContext =
+  contextoGlobal[STORE_CONTEXT_KEY] ??
+  (contextoGlobal[STORE_CONTEXT_KEY] = createContext<Ctx | null>(null));
 
 export function hoyISO() {
   return new Date().toISOString();
