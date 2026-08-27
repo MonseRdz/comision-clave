@@ -92,6 +92,8 @@ export type Gasto = {
   dictaminadorId?: string | undefined;
   motivoRechazo?: string | undefined;
   folioDelegacion?: string | undefined;
+  iaExtraccion?: IaExtraccion | undefined;
+
 };
 
 export type Delegacion = {
