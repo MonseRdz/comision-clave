@@ -151,6 +151,11 @@ function Gastos() {
       origenCiudad: esTransporte ? f.origenCiudad.trim() : "",
       destinoPais: esTransporte ? f.destinoPais : "",
       destinoCiudad: esTransporte ? f.destinoCiudad.trim() : "",
+      escalas: esTransporte
+        ? escalas
+            .filter((x) => x.pais)
+            .map((x) => ({ pais: x.pais, ciudad: x.ciudad.trim() }))
+        : [],
       participantesIds: participantes,
       archivos: adjuntos,
       estatus: "Registrado",
@@ -546,8 +551,12 @@ function Gastos() {
                     )}
                     {g.origenPais || g.destinoPais ? (
                       <li className="text-muted-foreground">
-                        Traslado: {lugarTexto(g.origenPais, g.origenCiudad)} →{" "}
-                        {lugarTexto(g.destinoPais, g.destinoCiudad)}
+                        Traslado:{" "}
+                        {rutaTexto(
+                          { pais: g.origenPais, ciudad: g.origenCiudad },
+                          g.escalas ?? [],
+                          { pais: g.destinoPais, ciudad: g.destinoCiudad },
+                        )}
                       </li>
                     ) : null}
                     <li className="text-muted-foreground">
