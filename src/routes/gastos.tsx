@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore, mxn, nuevoId, fechaCorta, esInmutable, hoyISO } from "@/lib/store";
-import type { Archivo, Escala, Gasto } from "@/lib/types";
+import type { Archivo, Escala, Gasto, IaExtraccion } from "@/lib/types";
 import { PAISES, rutaTexto } from "@/lib/paises";
+import { ExtraccionIA } from "@/components/extraccion-ia";
+
 import {
   Panel,
   TituloPanel,
