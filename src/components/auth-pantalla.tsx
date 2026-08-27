@@ -141,10 +141,16 @@ export function AuthPantalla() {
           sub={
             modo === "entrar"
               ? "Ingresa con el correo y la contraseña de tu cuenta autorizada."
-              : "Registra tu solicitud; el Contralor la aprueba y te asigna un rol."
+              : modo === "solicitar"
+                ? "Registra tu solicitud; el Contralor la aprueba y te asigna un rol."
+                : "Te enviaremos un enlace para definir una nueva contraseña."
           }
         >
-          {modo === "entrar" ? "Acceso al sistema" : "Solicitud de acceso"}
+          {modo === "entrar"
+            ? "Acceso al sistema"
+            : modo === "solicitar"
+              ? "Solicitud de acceso"
+              : "Recuperar contraseña"}
         </TituloPanel>
 
         {error ? <Aviso tono="alerta">{error}</Aviso> : null}
@@ -170,23 +176,57 @@ export function AuthPantalla() {
               onChange={(e) => setEmail(e.target.value)}
             />
           </Campo>
-          <Campo
-            etiqueta="Contraseña"
-            id="acc-password"
-            {...(modo === "solicitar" ? { ayuda: "Mínimo 8 caracteres." } : {})}
-          >
-            <Entrada
+          {modo === "recuperar" ? null : (
+            <Campo
+              etiqueta="Contraseña"
               id="acc-password"
-              type="password"
-              value={password}
-              autoComplete={modo === "entrar" ? "current-password" : "new-password"}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </Campo>
+              {...(modo === "solicitar" ? { ayuda: "Mínimo 8 caracteres." } : {})}
+            >
+              <Entrada
+                id="acc-password"
+                type="password"
+                value={password}
+                autoComplete={modo === "entrar" ? "current-password" : "new-password"}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </Campo>
+          )}
           <Boton type="submit" disabled={ocupado}>
-            {ocupado ? "Procesando…" : modo === "entrar" ? "Entrar" : "Enviar solicitud"}
+            {ocupado
+              ? "Procesando…"
+              : modo === "entrar"
+                ? "Entrar"
+                : modo === "solicitar"
+                  ? "Enviar solicitud"
+                  : "Enviar enlace de recuperación"}
           </Boton>
+          {modo === "recuperar" ? (
+            <button
+              type="button"
+              className="text-sm underline"
+              onClick={() => {
+                setModo("entrar");
+                setError("");
+                setAviso("");
+              }}
+            >
+              Volver al inicio de sesión
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="text-sm underline"
+              onClick={() => {
+                setModo("recuperar");
+                setError("");
+                setAviso("");
+              }}
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+          )}
         </form>
+
       </Panel>
     </div>
   );
