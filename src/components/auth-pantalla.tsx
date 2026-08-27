@@ -153,7 +153,7 @@ export function AuthPantalla() {
           <Campo
             etiqueta="Contraseña"
             id="acc-password"
-            ayuda={modo === "solicitar" ? "Mínimo 8 caracteres." : undefined}
+            {...(modo === "solicitar" ? { ayuda: "Mínimo 8 caracteres." } : {})}
           >
             <Entrada
               id="acc-password"
