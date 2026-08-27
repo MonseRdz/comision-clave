@@ -45,6 +45,19 @@ export type Archivo = {
 
 export type Escala = { pais: string; ciudad: string };
 
+/** Trazabilidad de la extracción inteligente: propuesta de IA vs. valor confirmado. */
+export type IaExtraccion = {
+  modelo: string;
+  metodo: string;
+  fecha: string;
+  archivo: string;
+  hash: string;
+  confianza: Record<string, string>;
+  propuesto: Record<string, string>;
+  confirmado: Record<string, string>;
+};
+
+
 export type EstatusGasto =
   | "Registrado"
   | "Validado por Revisor"
@@ -79,6 +92,8 @@ export type Gasto = {
   dictaminadorId?: string | undefined;
   motivoRechazo?: string | undefined;
   folioDelegacion?: string | undefined;
+  iaExtraccion?: IaExtraccion | undefined;
+
 };
 
 export type Delegacion = {

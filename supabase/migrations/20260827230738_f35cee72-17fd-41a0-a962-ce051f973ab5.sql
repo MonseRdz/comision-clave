@@ -1,0 +1,1 @@
+ALTER TABLE public.gastos ADD COLUMN IF NOT EXISTS ia_extraccion jsonb NOT NULL DEFAULT '{}'::jsonb;

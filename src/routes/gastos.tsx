@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore, mxn, nuevoId, fechaCorta, esInmutable, hoyISO } from "@/lib/store";
-import type { Archivo, Escala, Gasto } from "@/lib/types";
+import type { Archivo, Escala, Gasto, IaExtraccion } from "@/lib/types";
 import { PAISES, rutaTexto } from "@/lib/paises";
+import { ExtraccionIA } from "@/components/extraccion-ia";
+
 import {
   Panel,
   TituloPanel,
@@ -60,6 +62,9 @@ function Gastos() {
   const [pases, setPases] = useState<Record<string, Archivo>>({});
   const [aviso, setAviso] = useState("");
   const [error, setError] = useState("");
+  const [iaMeta, setIaMeta] = useState<IaExtraccion | null>(null);
+
+
   const [detalle, setDetalle] = useState<string | null>(null);
   const [edicion, setEdicion] = useState<{ id: string; monto: string } | null>(null);
 
@@ -163,7 +168,19 @@ function Gastos() {
       comisionadoId: usuarioActual.id,
       creadoEn: hoyISO(),
     };
+    if (iaMeta)
+      g.iaExtraccion = {
+        ...iaMeta,
+        confirmado: {
+          ...iaMeta.confirmado,
+          proveedor: g.proveedor,
+          monto: String(g.monto),
+          moneda: g.moneda,
+          rubro: g.rubro,
+        },
+      };
     setEstado((e) => ({ ...e, gastos: [g, ...e.gastos] }));
+
     registrar(
       "Registro de gasto",
       `${g.proveedor} por ${mxn(g.montoMXN)} (${g.rubro}) ${g.sinCFDI ? "sin CFDI" : "con CFDI"}.`,
@@ -189,7 +206,9 @@ function Gastos() {
     setParticipantes([]);
     setArchivos([]);
     setPases({});
+    setIaMeta(null);
   }
+
 
   function guardarEdicion(g: Gasto) {
     if (esInmutable(g)) {
@@ -224,6 +243,25 @@ function Gastos() {
     <div className="grid gap-4 pt-4">
       {error ? <Aviso tono="error">{error}</Aviso> : null}
       {aviso ? <Aviso>{aviso}</Aviso> : null}
+
+      <ExtraccionIA
+        onConfirmar={({ campos, archivo, meta }) => {
+          setF((prev) => ({
+            ...prev,
+            proveedor: campos.proveedor || prev.proveedor,
+            monto: campos.monto || prev.monto,
+            moneda: (["MXN", "USD", "EUR"].includes(campos.moneda)
+              ? campos.moneda
+              : prev.moneda) as Gasto["moneda"],
+            tipoCambio: campos.moneda === "MXN" ? "1" : prev.tipoCambio,
+            rubro: campos.rubro || prev.rubro,
+          }));
+          setArchivos((a) => (a.some((x) => x.nombre === archivo.nombre) ? a : [...a, archivo]));
+          setIaMeta(meta);
+          setError("");
+        }}
+      />
+
 
       <Panel>
         <TituloPanel sub="Factura CFDI, evidencia nominal, gastos sin comprobante y moneda extranjera.">
