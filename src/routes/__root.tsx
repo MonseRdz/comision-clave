@@ -117,11 +117,15 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function Contenido() {
   const { estado, usuarioActual, listo, acceso } = useStore();
+  const router = useRouter();
+  const enRecuperacion = router.state.location.pathname.startsWith("/reset-password");
+  if (enRecuperacion) return <Outlet />;
   if (!listo || acceso === "cargando") {
     return <p className="p-6 text-sm text-muted-foreground">Cargando…</p>;
   }
   if (acceso === "anonimo") return <AuthPantalla />;
   if (acceso === "pendiente") return <PendientePantalla />;
+
   const debeAceptar =
     usuarioActual.rol === "Comisionado" &&
     !estado.aceptaciones.some(

@@ -17,6 +17,7 @@ import { Route as GastosRouteImport } from './routes/gastos'
 import { Route as PresupuestosRouteImport } from './routes/presupuestos'
 import { Route as ReglasRouteImport } from './routes/reglas'
 import { Route as ReportesRouteImport } from './routes/reportes'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RevisionRouteImport } from './routes/revision'
 
 const IndexRoute = IndexRouteImport.update({
@@ -59,6 +60,11 @@ const ReportesRoute = ReportesRouteImport.update({
   path: '/reportes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RevisionRoute = RevisionRouteImport.update({
   id: '/revision',
   path: '/revision',
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/presupuestos': typeof PresupuestosRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/revision': typeof RevisionRoute
 }
 export interface FileRoutesByTo {
@@ -85,6 +92,7 @@ export interface FileRoutesByTo {
   '/presupuestos': typeof PresupuestosRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/revision': typeof RevisionRoute
 }
 export interface FileRoutesById {
@@ -97,6 +105,7 @@ export interface FileRoutesById {
   '/presupuestos': typeof PresupuestosRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/revision': typeof RevisionRoute
 }
 export interface FileRouteTypes {
@@ -110,6 +119,7 @@ export interface FileRouteTypes {
     | '/presupuestos'
     | '/reglas'
     | '/reportes'
+    | '/reset-password'
     | '/revision'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
     | '/presupuestos'
     | '/reglas'
     | '/reportes'
+    | '/reset-password'
     | '/revision'
   id:
     | '__root__'
@@ -132,6 +143,7 @@ export interface FileRouteTypes {
     | '/presupuestos'
     | '/reglas'
     | '/reportes'
+    | '/reset-password'
     | '/revision'
   fileRoutesById: FileRoutesById
 }
@@ -144,6 +156,7 @@ export interface RootRouteChildren {
   PresupuestosRoute: typeof PresupuestosRoute
   ReglasRoute: typeof ReglasRoute
   ReportesRoute: typeof ReportesRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   RevisionRoute: typeof RevisionRoute
 }
 
@@ -205,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReportesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/revision': {
       id: '/revision'
       path: '/revision'
@@ -224,6 +244,7 @@ const rootRouteChildren: RootRouteChildren = {
   PresupuestosRoute: PresupuestosRoute,
   ReglasRoute: ReglasRoute,
   ReportesRoute: ReportesRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   RevisionRoute: RevisionRoute,
 }
 export const routeTree = rootRouteImport
