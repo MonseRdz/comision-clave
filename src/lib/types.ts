@@ -43,6 +43,8 @@ export type Archivo = {
   participanteId?: string | undefined;
 };
 
+export type Escala = { pais: string; ciudad: string };
+
 export type EstatusGasto =
   | "Registrado"
   | "Validado por Revisor"
@@ -65,6 +67,8 @@ export type Gasto = {
   origenCiudad: string;
   destinoPais: string;
   destinoCiudad: string;
+  /** Escalas o paradas intermedias del traslado, en orden. */
+  escalas: Escala[];
   participantesIds: string[];
   archivos: Archivo[];
   estatus: EstatusGasto;
