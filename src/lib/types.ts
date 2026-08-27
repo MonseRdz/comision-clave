@@ -39,6 +39,8 @@ export type Archivo = {
   nombre: string;
   tipo: string;
   dataUrl: string;
+  /** Participante al que corresponde el pase de abordar, si aplica. */
+  participanteId?: string | undefined;
 };
 
 export type EstatusGasto =
@@ -59,6 +61,10 @@ export type Gasto = {
   montoMXN: number;
   sinCFDI: boolean;
   justificacion: string;
+  origenPais: string;
+  origenCiudad: string;
+  destinoPais: string;
+  destinoCiudad: string;
   participantesIds: string[];
   archivos: Archivo[];
   estatus: EstatusGasto;
