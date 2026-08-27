@@ -1,4 +1,4 @@
-import { lugarTexto } from "@/lib/paises";
+import { rutaTexto } from "@/lib/paises";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore, mxn, fechaCorta, diasDesde } from "@/lib/store";
