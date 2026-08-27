@@ -4,28 +4,55 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
-import { estadoInicial } from "./seed";
-import type { Estado, Gasto } from "./types";
+import { supabase } from "@/integrations/supabase/client";
+import { cargarDatos, cargarPerfiles, instantanea, sincronizar, type Instantanea, type Perfil } from "./db";
+import type { Estado, Gasto, Rol, Usuario } from "./types";
 
-const CLAVE = "comprobacion-gastos-v1";
+export type Acceso = "cargando" | "anonimo" | "pendiente" | "activo";
 
 type Ctx = {
   estado: Estado;
   setEstado: (fn: (e: Estado) => Estado) => void;
   registrar: (accion: string, detalle: string) => void;
-  usuarioActual: Estado["usuarios"][number];
+  usuarioActual: Usuario;
   puedeAprobar: boolean;
   delegacionVigente: Estado["delegaciones"][number] | undefined;
   listo: boolean;
+  acceso: Acceso;
+  perfiles: Perfil[];
+  correoSesion: string;
+  errorSync: string;
+  recargar: () => Promise<void>;
+  cerrarSesion: () => Promise<void>;
 };
 
 const StoreContext = createContext<Ctx | null>(null);
 
 export function hoyISO() {
   return new Date().toISOString();
+}
+
+function estadoVacio(): Estado {
+  return {
+    usuarios: [],
+    eventos: [],
+    presupuestos: [],
+    gastos: [],
+    delegaciones: [],
+    bitacora: [],
+    aceptaciones: [],
+    rubros: [],
+    motivosRechazo: [],
+    justificacionesSinCFDI: [],
+    proveedores: [],
+    topeSinComprobante: 2000,
+    versionReglas: "ADEMEBA v1.0",
+    usuarioActualId: "",
+  };
 }
 
 export function delegacionVigenteDe(estado: Estado) {
@@ -35,36 +62,87 @@ export function delegacionVigenteDe(estado: Estado) {
   );
 }
 
-export function StoreProvider({ children }: { children: ReactNode }) {
-  const [estado, setEstadoRaw] = useState<Estado>(() => estadoInicial());
-  const [listo, setListo] = useState(false);
+const aUsuario = (p: Perfil): Usuario => ({
+  id: p.id,
+  nombre: p.nombre,
+  email: p.email,
+  rol: (p.rol ?? "Comisionado") as Rol,
+  activo: p.estatus === "Aprobado",
+});
 
-  useEffect(() => {
-    try {
-      const guardado = localStorage.getItem(CLAVE);
-      if (guardado) {
-        const previo = JSON.parse(guardado) as Estado;
-        // El rol Administrador se eliminó: sus facultades quedan en el Contralor.
-        const usuarios = previo.usuarios.filter((u) => (u.rol as string) !== "Administrador");
-        const usuarioActualId = usuarios.some((u) => u.id === previo.usuarioActualId)
-          ? previo.usuarioActualId
-          : (usuarios[0]?.id ?? previo.usuarioActualId);
-        setEstadoRaw({ ...previo, usuarios, usuarioActualId });
-      }
-    } catch {
-      /* estado por defecto */
+export function StoreProvider({ children }: { children: ReactNode }) {
+  const [estado, setEstadoRaw] = useState<Estado>(estadoVacio);
+  const [perfiles, setPerfiles] = useState<Perfil[]>([]);
+  const [acceso, setAcceso] = useState<Acceso>("cargando");
+  const [listo, setListo] = useState(false);
+  const [correoSesion, setCorreoSesion] = useState("");
+  const [errorSync, setErrorSync] = useState("");
+  const snapRef = useRef<Instantanea>({});
+  const colaRef = useRef<Promise<unknown>>(Promise.resolve());
+  const usuarioIdRef = useRef<string>("");
+
+  const cargar = useCallback(async () => {
+    const { data } = await supabase.auth.getUser();
+    const user = data.user;
+    if (!user) {
+      usuarioIdRef.current = "";
+      setCorreoSesion("");
+      setPerfiles([]);
+      setEstadoRaw(estadoVacio());
+      setAcceso("anonimo");
+      setListo(true);
+      return;
     }
+    usuarioIdRef.current = user.id;
+    setCorreoSesion(user.email ?? "");
+
+    const lista = await cargarPerfiles();
+    setPerfiles(lista);
+    const mio = lista.find((p) => p.id === user.id);
+
+    if (!mio || mio.estatus !== "Aprobado" || !mio.rol) {
+      setEstadoRaw(estadoVacio());
+      setAcceso("pendiente");
+      setListo(true);
+      return;
+    }
+
+    const datos = await cargarDatos();
+    const nuevo: Estado = {
+      ...datos,
+      usuarios: lista.filter((p) => p.rol).map(aUsuario),
+      usuarioActualId: user.id,
+    };
+    snapRef.current = instantanea(nuevo);
+    setEstadoRaw(nuevo);
+    setAcceso("activo");
     setListo(true);
   }, []);
 
   useEffect(() => {
-    if (!listo) return;
-    try {
-      localStorage.setItem(CLAVE, JSON.stringify(estado));
-    } catch {
-      /* almacenamiento lleno */
-    }
-  }, [estado, listo]);
+    const { data: sub } = supabase.auth.onAuthStateChange((evento) => {
+      if (evento === "SIGNED_IN" || evento === "SIGNED_OUT" || evento === "USER_UPDATED") {
+        setListo(false);
+        void cargar();
+      }
+    });
+    void cargar();
+    return () => sub.subscription.unsubscribe();
+  }, [cargar]);
+
+  // Persistencia incremental: solo se escribe lo que cambió.
+  useEffect(() => {
+    if (!listo || acceso !== "activo") return;
+    colaRef.current = colaRef.current
+      .then(async () => {
+        snapRef.current = await sincronizar(estado, snapRef.current);
+        setErrorSync("");
+      })
+      .catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : String(e);
+        setErrorSync(`No se pudo guardar en el servidor. ${msg}`);
+      });
+  }, [estado, listo, acceso]);
 
   const setEstado = useCallback((fn: (e: Estado) => Estado) => setEstadoRaw((e) => fn(e)), []);
 
@@ -87,18 +165,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const usuarioActual = useMemo(
-    () =>
-      estado.usuarios.find((u) => u.id === estado.usuarioActualId) ??
-      (estado.usuarios[0] as Estado["usuarios"][number]),
-    [estado],
-  );
+  const cerrarSesion = useCallback(async () => {
+    await supabase.auth.signOut();
+    setAcceso("anonimo");
+  }, []);
+
+  const usuarioActual = useMemo<Usuario>(() => {
+    const mio = perfiles.find((p) => p.id === usuarioIdRef.current);
+    return mio
+      ? aUsuario(mio)
+      : { id: "", nombre: "", email: correoSesion, rol: "Comisionado", activo: false };
+  }, [perfiles, correoSesion]);
 
   const delegacion = useMemo(() => delegacionVigenteDe(estado), [estado]);
 
   const puedeAprobar =
-    usuarioActual?.rol === "Contralor" ||
-    (usuarioActual?.rol === "Director" && delegacion?.paraId === usuarioActual.id);
+    usuarioActual.rol === "Contralor" ||
+    (usuarioActual.rol === "Director" && delegacion?.paraId === usuarioActual.id);
 
   return (
     <StoreContext.Provider
@@ -110,6 +193,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         puedeAprobar,
         delegacionVigente: delegacion,
         listo,
+        acceso,
+        perfiles,
+        correoSesion,
+        errorSync,
+        recargar: cargar,
+        cerrarSesion,
       }}
     >
       {children}
