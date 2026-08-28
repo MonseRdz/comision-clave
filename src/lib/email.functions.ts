@@ -18,7 +18,7 @@ export const enviarCorreoPrueba = createServerFn({ method: 'POST' })
 
     const { data: esContralor } = await supabase.rpc('has_role', {
       _user_id: userId,
-      _role: 'contralor',
+      _role: 'Contralor',
     })
     if (!esContralor) {
       throw new Error('Solo el Contralor puede enviar correos de prueba')
