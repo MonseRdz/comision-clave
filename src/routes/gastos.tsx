@@ -195,7 +195,13 @@ function Gastos() {
       comisionadoId: usuarioActual.id,
       creadoEn: hoyISO(),
     };
+    const repetido = gastoRepetido(estado.gastos, g);
+    if (repetido)
+      return setError(
+        `Candado antiduplicados: ya existe un gasto de "${repetido.proveedor}" en el mismo evento y rubro por ${mxn(repetido.montoMXN)} (${repetido.estatus}). No se puede registrar dos veces el mismo comprobante.`,
+      );
     if (iaMeta)
+
       g.iaExtraccion = {
         ...iaMeta,
         confirmado: {
