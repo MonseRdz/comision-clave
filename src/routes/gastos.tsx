@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useStore, mxn, nuevoId, fechaCorta, esInmutable, hoyISO } from "@/lib/store";
 import type { Archivo, Escala, Gasto, IaExtraccion } from "@/lib/types";
 import { PAISES, rutaTexto } from "@/lib/paises";
+import { buscarDuplicado, gastoRepetido, mensajeDuplicado } from "@/lib/duplicados";
+
 import { ExtraccionIA } from "@/components/extraccion-ia";
 
 import {
