@@ -1,5 +1,16 @@
 import type { Archivo, Gasto } from "./types";
 
+/** Mensaje único del candado antiduplicados. */
+export function mensajeDuplicado(
+  nombre: string,
+  coincidencia: { gasto: Gasto; archivo: string } | null,
+): string {
+  return coincidencia
+    ? `Candado antiduplicados: el documento "${nombre}" ya fue registrado en el gasto de "${coincidencia.gasto.proveedor}" (${coincidencia.gasto.estatus}) como "${coincidencia.archivo}". No puede comprobarse dos veces.`
+    : `Candado antiduplicados: el documento "${nombre}" ya está adjunto en esta captura. No puede repetirse.`;
+}
+
+
 /** Huella SHA-256 del contenido del archivo (candado antiduplicados). */
 export async function huellaTexto(texto: string): Promise<string> {
   try {
