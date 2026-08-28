@@ -1,5 +1,6 @@
 import { useStore, hoyISO, nuevoId, fechaHora } from "@/lib/store";
 import { AVISO_PRIVACIDAD, TERMINOS, VERSION_LEGAL } from "@/lib/legal";
+import { descargarComprobanteLegal } from "@/lib/comprobante-legal";
 import { Panel, TituloPanel, Boton, Aviso, Etiqueta } from "@/components/glass";
 
 export function DocumentosLegales() {
@@ -78,6 +79,19 @@ export function LegalPantalla() {
               <Aviso>
                 Aceptados el {fechaHora(aceptacion.fecha)} · versión {aceptacion.version}
               </Aviso>
+              <Boton
+                type="button"
+                variante="neutro"
+                onClick={() =>
+                  descargarComprobanteLegal({
+                    usuario: usuarioActual,
+                    aceptacionId: aceptacion.id,
+                    fechaISO: aceptacion.fecha,
+                  })
+                }
+              >
+                Descargar comprobante PDF
+              </Boton>
             </div>
           ) : (
             <div className="grid gap-3">
