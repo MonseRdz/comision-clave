@@ -4,6 +4,7 @@ import { useStore, hoyISO, nuevoId } from "@/lib/store";
 import { leerCFDI, type Propuesta } from "@/lib/cfdi";
 import { extraerComprobante, SERVICIO_IA } from "@/lib/extraccion.functions";
 import type { Archivo, IaExtraccion } from "@/lib/types";
+import { buscarDuplicado, huellaArchivo, mensajeDuplicado } from "@/lib/duplicados";
 import { Panel, TituloPanel, Boton, Campo, Entrada, Selector, Aviso, Etiqueta } from "./glass";
 
 export const VERSION_CONSENTIMIENTO = "IA-LFPDPPP v1.0";
@@ -19,18 +20,6 @@ export type ResultadoConfirmado = {
 const tono = (c: string) => (c === "alta" ? "ok" : c === "media" ? "alerta" : "neutro");
 const texto = (c: string) =>
   c === "alta" ? "Confianza alta" : c === "media" ? "Confianza media — revisa" : "Sin lectura — captura manual";
-
-async function huella(dataUrl: string) {
-  try {
-    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(dataUrl));
-    return Array.from(new Uint8Array(buf))
-      .slice(0, 16)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-  } catch {
-    return "";
-  }
-}
 
 export function ExtraccionIA({ onConfirmar }: { onConfirmar: (r: ResultadoConfirmado) => void }) {
   const { estado, setEstado, registrar, usuarioActual } = useStore();
@@ -80,6 +69,12 @@ export function ExtraccionIA({ onConfirmar }: { onConfirmar: (r: ResultadoConfir
       r.onerror = () => resolve({ nombre: file.name, tipo: file.type || "archivo", dataUrl: "" });
       r.readAsDataURL(file);
     });
+    const dup = await buscarDuplicado([leido], estado.gastos);
+    if (dup) {
+      setArchivo(null);
+      setMensaje(mensajeDuplicado(leido.nombre, dup.coincidencia));
+      return;
+    }
     setArchivo(leido);
     setCargando(true);
     try {
@@ -135,7 +130,7 @@ export function ExtraccionIA({ onConfirmar }: { onConfirmar: (r: ResultadoConfir
       metodo: propuesta.metodo,
       fecha: hoyISO(),
       archivo: archivo.nombre,
-      hash: await huella(archivo.dataUrl),
+      hash: await huellaArchivo(archivo),
       confianza: propuesta.confianza,
       propuesto: { ...propuesta.campos },
       confirmado: { ...editado },
