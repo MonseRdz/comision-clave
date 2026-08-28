@@ -16,6 +16,7 @@ const ENLACES: Enlace[] = [
   { a: "/presupuestos", texto: "Presupuestos", roles: ["Contralor", "Director"] },
   { a: "/admin", texto: "Usuarios y configuración", roles: ["Contralor"] },
   { a: "/reportes", texto: "Reportes y expediente", roles: ["Contralor", "Director", "Revisor"] },
+  { a: "/legal", texto: "Privacidad y términos", roles: ["Contralor", "Director", "Revisor", "Comisionado"] },
 ];
 
 // El Director solo accede a estas consolas cuando el Contralor le delegó autoridad.

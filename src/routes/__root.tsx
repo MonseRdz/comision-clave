@@ -14,6 +14,8 @@ import { reportLovableError } from "@/lib/lovable-error-reporting";
 import { StoreProvider, useStore } from "@/lib/store";
 import { Layout } from "@/components/layout";
 import { ReglasPantalla } from "@/components/reglas-pantalla";
+import { LegalPantalla } from "@/components/legal-pantalla";
+import { VERSION_LEGAL } from "@/lib/legal";
 import { AuthPantalla, PendientePantalla } from "@/components/auth-pantalla";
 
 function NotFoundComponent() {
@@ -126,13 +128,21 @@ function Contenido() {
   if (acceso === "anonimo") return <AuthPantalla />;
   if (acceso === "pendiente") return <PendientePantalla />;
 
+  const debeAceptarLegal = !estado.aceptaciones.some(
+    (a) => a.usuarioId === usuarioActual.id && a.version === VERSION_LEGAL,
+  );
+
   const debeAceptar =
     usuarioActual.rol === "Comisionado" &&
     !estado.aceptaciones.some(
       (a) => a.usuarioId === usuarioActual.id && a.version === estado.versionReglas,
     );
 
-  return <Layout>{debeAceptar ? <ReglasPantalla /> : <Outlet />}</Layout>;
+  return (
+    <Layout>
+      {debeAceptarLegal ? <LegalPantalla /> : debeAceptar ? <ReglasPantalla /> : <Outlet />}
+    </Layout>
+  );
 }
 
 function RootComponent() {
