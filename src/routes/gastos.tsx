@@ -90,6 +90,19 @@ function Gastos() {
     const file = lista?.[0];
     if (!file) return;
     const leido = await leerArchivo(file);
+    const otros = [
+      ...archivos,
+      ...Object.entries(pases)
+        .filter(([k]) => k !== participanteId)
+        .map(([, a]) => a),
+    ];
+    const dup = await buscarDuplicado([leido], estado.gastos);
+    const dupLocal = await buscarDuplicado([leido, ...otros], []);
+    if (dup || dupLocal) {
+      setError(mensajeDuplicado(leido.nombre, dup?.coincidencia ?? null));
+      return;
+    }
+    setError("");
     setPases((prev) => ({ ...prev, [participanteId]: { ...leido, participanteId } }));
   }
 
@@ -107,10 +120,20 @@ function Gastos() {
           }),
       ),
     );
-    setArchivos((a) => [...a, ...leidos]);
+    const aceptados: Archivo[] = [];
+    for (const a of leidos) {
+      const dup = await buscarDuplicado([a], estado.gastos);
+      const dupLocal = await buscarDuplicado([a, ...archivos, ...aceptados], []);
+      if (dup || dupLocal) {
+        setError(mensajeDuplicado(a.nombre, dup?.coincidencia ?? null));
+        continue;
+      }
+      aceptados.push(a);
+    }
+    if (aceptados.length) setArchivos((prev) => [...prev, ...aceptados]);
   }
 
-  function registrarGasto(ev: React.FormEvent) {
+  async function registrarGasto(ev: React.FormEvent) {
     ev.preventDefault();
     setAviso("");
     if (!f.proveedor.trim()) return setError("Captura el proveedor o concepto del gasto.");
@@ -140,6 +163,10 @@ function Gastos() {
     const adjuntos: Archivo[] = esTransporte
       ? [...archivos, ...nominales.map((p) => pases[p.id]).filter((a): a is Archivo => Boolean(a))]
       : archivos;
+
+    const dupDoc = await buscarDuplicado(adjuntos, estado.gastos);
+    if (dupDoc) return setError(mensajeDuplicado(dupDoc.archivo, dupDoc.coincidencia));
+
 
     const g: Gasto = {
       id: nuevoId("g"),
