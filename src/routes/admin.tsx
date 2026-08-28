@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore, mxn, fechaHora } from "@/lib/store";
+import { enviarCorreoPrueba } from "@/lib/email.functions";
 import { ROLES, type Rol } from "@/lib/types";
 import {
   Panel,
@@ -43,6 +44,7 @@ function Admin() {
   const [aviso, setAviso] = useState("");
   const [rolSolicitud, setRolSolicitud] = useState<Record<string, Rol>>({});
   const [ocupado, setOcupado] = useState("");
+  const [correoPrueba, setCorreoPrueba] = useState("");
 
   const esAdmin = usuarioActual.rol === "Contralor";
 
@@ -218,6 +220,53 @@ function Admin() {
             </tr>
           ))}
         </Tabla>
+      </Panel>
+
+      <Panel>
+        <TituloPanel sub="Envía un correo de prueba para confirmar que el dominio de notificaciones entrega correctamente.">
+          Correo de prueba
+        </TituloPanel>
+        <form
+          className="flex flex-wrap items-end gap-3"
+          onSubmit={async (ev) => {
+            ev.preventDefault();
+            const correo = correoPrueba.trim();
+            if (!correo) return setAviso("Indica el correo del destinatario.");
+            setOcupado("correo");
+            setAviso("");
+            try {
+              const res = await enviarCorreoPrueba({
+                data: { destinatario: correo, nombre: usuarioActual.nombre },
+              });
+              setAviso(
+                res.sent
+                  ? `Correo de prueba enviado a ${correo}. Revisa la bandeja de entrada y spam.`
+                  : `No se envió: ${correo} está en la lista de supresión (rebote o baja previa).`,
+              );
+            } catch (err) {
+              setAviso(
+                `Error al enviar: ${err instanceof Error ? err.message : "desconocido"}`,
+              );
+            } finally {
+              setOcupado("");
+            }
+          }}
+        >
+          <Campo etiqueta="Correo del destinatario" id="correo-prueba">
+            <Entrada
+              id="correo-prueba"
+              type="email"
+              required
+              placeholder="nombre@dominio.com"
+              value={correoPrueba}
+              onChange={(e) => setCorreoPrueba(e.target.value)}
+              className="w-72"
+            />
+          </Campo>
+          <Boton type="submit" disabled={ocupado === "correo"}>
+            {ocupado === "correo" ? "Enviando…" : "Enviar correo de prueba"}
+          </Boton>
+        </form>
       </Panel>
 
       <Panel>
