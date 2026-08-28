@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore, mxn, fechaHora } from "@/lib/store";
+import { enviarCorreoPrueba } from "@/lib/email.functions";
 import { ROLES, type Rol } from "@/lib/types";
 import {
   Panel,
@@ -43,6 +44,7 @@ function Admin() {
   const [aviso, setAviso] = useState("");
   const [rolSolicitud, setRolSolicitud] = useState<Record<string, Rol>>({});
   const [ocupado, setOcupado] = useState("");
+  const [correoPrueba, setCorreoPrueba] = useState("");
 
   const esAdmin = usuarioActual.rol === "Contralor";
 
