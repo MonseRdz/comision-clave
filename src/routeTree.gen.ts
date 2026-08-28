@@ -14,6 +14,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AprobacionRouteImport } from './routes/aprobacion'
 import { Route as EventosRouteImport } from './routes/eventos'
 import { Route as GastosRouteImport } from './routes/gastos'
+import { Route as LegalRouteImport } from './routes/legal'
 import { Route as PresupuestosRouteImport } from './routes/presupuestos'
 import { Route as ReglasRouteImport } from './routes/reglas'
 import { Route as ReportesRouteImport } from './routes/reportes'
@@ -43,6 +44,11 @@ const EventosRoute = EventosRouteImport.update({
 const GastosRoute = GastosRouteImport.update({
   id: '/gastos',
   path: '/gastos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalRoute = LegalRouteImport.update({
+  id: '/legal',
+  path: '/legal',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PresupuestosRoute = PresupuestosRouteImport.update({
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/aprobacion': typeof AprobacionRoute
   '/eventos': typeof EventosRoute
   '/gastos': typeof GastosRoute
+  '/legal': typeof LegalRoute
   '/presupuestos': typeof PresupuestosRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/aprobacion': typeof AprobacionRoute
   '/eventos': typeof EventosRoute
   '/gastos': typeof GastosRoute
+  '/legal': typeof LegalRoute
   '/presupuestos': typeof PresupuestosRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/aprobacion': typeof AprobacionRoute
   '/eventos': typeof EventosRoute
   '/gastos': typeof GastosRoute
+  '/legal': typeof LegalRoute
   '/presupuestos': typeof PresupuestosRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/aprobacion'
     | '/eventos'
     | '/gastos'
+    | '/legal'
     | '/presupuestos'
     | '/reglas'
     | '/reportes'
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/aprobacion'
     | '/eventos'
     | '/gastos'
+    | '/legal'
     | '/presupuestos'
     | '/reglas'
     | '/reportes'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/aprobacion'
     | '/eventos'
     | '/gastos'
+    | '/legal'
     | '/presupuestos'
     | '/reglas'
     | '/reportes'
@@ -153,6 +165,7 @@ export interface RootRouteChildren {
   AprobacionRoute: typeof AprobacionRoute
   EventosRoute: typeof EventosRoute
   GastosRoute: typeof GastosRoute
+  LegalRoute: typeof LegalRoute
   PresupuestosRoute: typeof PresupuestosRoute
   ReglasRoute: typeof ReglasRoute
   ReportesRoute: typeof ReportesRoute
@@ -195,6 +208,13 @@ declare module '@tanstack/react-router' {
       path: '/gastos'
       fullPath: '/gastos'
       preLoaderRoute: typeof GastosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal': {
+      id: '/legal'
+      path: '/legal'
+      fullPath: '/legal'
+      preLoaderRoute: typeof LegalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/presupuestos': {
@@ -241,6 +261,7 @@ const rootRouteChildren: RootRouteChildren = {
   AprobacionRoute: AprobacionRoute,
   EventosRoute: EventosRoute,
   GastosRoute: GastosRoute,
+  LegalRoute: LegalRoute,
   PresupuestosRoute: PresupuestosRoute,
   ReglasRoute: ReglasRoute,
   ReportesRoute: ReportesRoute,
