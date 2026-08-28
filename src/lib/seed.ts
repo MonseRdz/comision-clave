@@ -1,4 +1,4 @@
-export const VERSION_REGLAS = "ADEMEBA v1.0";
+export const VERSION_REGLAS = "ADEMEBA v1.1";
 
 export const REGLAS = [
   "Todo gasto con cargo a recursos públicos debe estar respaldado por CFDI vigente (XML y PDF) a nombre de la asociación.",
@@ -8,4 +8,5 @@ export const REGLAS = [
   "La comprobación debe enviarse dentro de los 7 días naturales posteriores al término del evento.",
   "Toda acción realizada en la aplicación queda asentada en una bitácora inmutable disponible para auditoría de CONADE.",
   "El comisionado responde por la autenticidad de la documentación que carga; la falsedad de documentos se sanciona conforme a la normativa vigente.",
+  "Los comisionados aceptan la responsabilidad de realizar las comprobaciones que se les asignen en tiempo y forma, conforme a los plazos y requisitos establecidos por ADEMEBA.",
 ];
