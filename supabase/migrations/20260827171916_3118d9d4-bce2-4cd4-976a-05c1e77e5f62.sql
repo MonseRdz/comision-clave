@@ -135,7 +135,7 @@ $$;
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
-  es_maestro boolean := lower(NEW.email) = 'omar.magallanes@ademeba.com.mx';
+  es_maestro boolean := lower(NEW.email) = 'contralor.demo@test.com';
 BEGIN
   INSERT INTO public.profiles (id, nombre, email, estatus)
   VALUES (
