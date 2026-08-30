@@ -275,6 +275,7 @@ export type Instantanea = Record<string, Record<string, string>>;
 type ClienteDinamico = {
   from: (tabla: string) => {
     upsert: (filas: Fila[], opciones: { onConflict: string }) => Promise<{ error: { message: string } | null }>;
+    update: (fila: Fila) => { eq: (col: string, valor: unknown) => Promise<{ error: { message: string } | null }> };
     delete: () => { in: (col: string, ids: string[]) => Promise<{ error: { message: string } | null }> };
   };
 };
