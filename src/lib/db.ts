@@ -233,6 +233,7 @@ const TABLAS: Tabla[] = [
         id: b.id,
         fecha: b.fecha,
         actor: b.actor,
+        actor_id: uuidONull(b.actor_id ?? ""),
         accion: b.accion,
         detalle: b.detalle,
       })),
