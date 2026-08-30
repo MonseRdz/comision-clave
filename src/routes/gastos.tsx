@@ -41,7 +41,15 @@ export const Route = createFileRoute("/gastos")({
 });
 
 const tonoEstatus = (e: Gasto["estatus"]) =>
-  e === "Aprobado" ? "ok" : e === "Rechazado" ? "error" : e === "Devuelto para corrección" ? "alerta" : "neutro";
+  e === "Aprobado"
+    ? "ok"
+    : e === "Rechazado"
+      ? "error"
+      : e === "Devuelto para corrección"
+        ? "alerta"
+        : e === "Borrador"
+          ? "marca"
+          : "neutro";
 
 function Gastos() {
   const { estado, setEstado, registrar, usuarioActual } = useStore();
@@ -193,7 +201,7 @@ function Gastos() {
         : [],
       participantesIds: participantes,
       archivos: adjuntos,
-      estatus: "Registrado",
+      estatus: "Borrador",
       observaciones: "",
       comisionadoId: usuarioActual.id,
       creadoEn: hoyISO(),
