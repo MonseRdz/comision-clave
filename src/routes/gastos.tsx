@@ -8,6 +8,7 @@ import { buscarDuplicado, gastoRepetido, mensajeDuplicado } from "@/lib/duplicad
 import { ExtraccionIA } from "@/components/extraccion-ia";
 
 import {
+import { convertirMoneda } from "@/lib/dinero";
   Panel,
   TituloPanel,
   Boton,
@@ -76,7 +77,7 @@ function Gastos() {
   const faltanPases = esTransporte ? nominales.filter((p) => !pases[p.id]) : [];
   const monto = Number(f.monto) || 0;
   const tc = f.moneda === "MXN" ? 1 : Number(f.tipoCambio) || 0;
-  const montoMXN = Math.round(monto * tc * 100) / 100;
+  const montoMXN = convertirMoneda(monto, tc);
 
   function leerArchivo(file: File): Promise<Archivo> {
     return new Promise<Archivo>((resolve) => {
@@ -259,7 +260,7 @@ function Gastos() {
       ...e,
       gastos: e.gastos.map((x) =>
         x.id === g.id
-          ? { ...x, monto: nuevo, montoMXN: Math.round(nuevo * x.tipoCambio * 100) / 100 }
+          ? { ...x, monto: nuevo, montoMXN: convertirMoneda(nuevo, x.tipoCambio) }
           : x,
       ),
     }));
