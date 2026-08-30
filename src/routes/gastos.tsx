@@ -667,6 +667,9 @@ function Gastos() {
               </Celda>
               <Celda>
                 <div className="flex flex-wrap gap-2">
+                  {g.estatus === "Borrador" ? (
+                    <Boton onClick={() => enviarARevision(g)}>Enviar a revisión</Boton>
+                  ) : null}
                   <Boton variante="neutro" onClick={() => setDetalle(detalle === g.id ? null : g.id)}>
                     {detalle === g.id ? "Ocultar" : "Ver adjuntos"}
                   </Boton>
