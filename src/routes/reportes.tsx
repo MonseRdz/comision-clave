@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore, mxn, diasDesde, fechaCorta } from "@/lib/store";
 import { Panel, TituloPanel, Boton, Selector, Campo, Tabla, Celda, Etiqueta, Aviso } from "@/components/glass";
+import { suma } from "@/lib/dinero";
 
 export const Route = createFileRoute("/reportes")({
   head: () => ({
@@ -37,9 +38,9 @@ function Reportes() {
         </TituloPanel>
         <Tabla cabeceras={["Evento", "% comprobado", "Comisionados pendientes", "Días de atraso máximo"]}>
           {estado.eventos.map((ev) => {
-            const asig = estado.presupuestos.filter((p) => p.eventoId === ev.id).reduce((s, p) => s + p.monto, 0);
+            const asig = estado.presupuestos.filter((p) => p.eventoId === ev.id).reduce((s, p) => suma(s, p.monto), 0);
             const gs = estado.gastos.filter((g) => g.eventoId === ev.id);
-            const comp = gs.filter((g) => g.estatus !== "Rechazado").reduce((s, g) => s + g.montoMXN, 0);
+            const comp = gs.filter((g) => g.estatus !== "Rechazado").reduce((s, g) => suma(s, g.montoMXN), 0);
             const pend = gs.filter((g) => g.estatus !== "Aprobado" && g.estatus !== "Rechazado");
             const nombres = [
               ...new Set(pend.map((g) => estado.usuarios.find((u) => u.id === g.comisionadoId)?.nombre ?? "—")),

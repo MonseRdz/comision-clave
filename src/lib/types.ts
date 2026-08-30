@@ -110,6 +110,7 @@ export type Bitacora = {
   id: string;
   fecha: string;
   actor: string;
+  actor_id: string;
   accion: string;
   detalle: string;
 };

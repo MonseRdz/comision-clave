@@ -39,6 +39,7 @@ export type Database = {
         Row: {
           accion: string
           actor: string
+          actor_id: string | null
           detalle: string
           fecha: string
           id: string
@@ -46,6 +47,7 @@ export type Database = {
         Insert: {
           accion?: string
           actor?: string
+          actor_id?: string | null
           detalle?: string
           fecha?: string
           id: string
@@ -53,6 +55,7 @@ export type Database = {
         Update: {
           accion?: string
           actor?: string
+          actor_id?: string | null
           detalle?: string
           fecha?: string
           id?: string
