@@ -299,11 +299,18 @@ export async function sincronizar(estado: Estado, previa: Instantanea): Promise<
   for (const t of TABLAS) {
     const antes = previa[t.nombre] ?? {};
     const ahora = actual[t.nombre] ?? {};
-    const cambiadas = Object.keys(ahora)
-      .filter((id) => antes[id] !== ahora[id])
-      .map((id) => JSON.parse(ahora[id] as string) as Fila);
-    if (cambiadas.length) {
-      const { error } = await dinamico.from(t.nombre).upsert(cambiadas, { onConflict: t.pk });
+    const ids = Object.keys(ahora).filter((id) => antes[id] !== ahora[id]);
+    // Las filas que ya existen se actualizan con UPDATE: un upsert exigiría
+    // permiso de alta y roles como Revisor o Director solo pueden editar.
+    const nuevas = ids.filter((id) => !(id in antes)).map((id) => JSON.parse(ahora[id] as string) as Fila);
+    const existentes = ids.filter((id) => id in antes).map((id) => JSON.parse(ahora[id] as string) as Fila);
+    if (nuevas.length) {
+      const { error } = await dinamico.from(t.nombre).upsert(nuevas, { onConflict: t.pk });
+      if (error) errores.push(`${t.nombre}: ${error.message}`);
+    }
+    for (const fila of existentes) {
+      const { [t.pk]: pkValor, ...campos } = fila;
+      const { error } = await dinamico.from(t.nombre).update(campos as Fila).eq(t.pk, pkValor);
       if (error) errores.push(`${t.nombre}: ${error.message}`);
     }
   }
