@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { resta, suma } from "@/lib/dinero";
 import { useState } from "react";
 import { useStore, mxn, nuevoId } from "@/lib/store";
 import {
-import { resta, suma } from "@/lib/dinero";
   Panel,
   TituloPanel,
   Boton,

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { convertirMoneda } from "@/lib/dinero";
 import { useState } from "react";
 import { useStore, mxn, nuevoId, fechaCorta, esInmutable, hoyISO } from "@/lib/store";
 import type { Archivo, Escala, Gasto, IaExtraccion } from "@/lib/types";
@@ -8,7 +9,6 @@ import { buscarDuplicado, gastoRepetido, mensajeDuplicado } from "@/lib/duplicad
 import { ExtraccionIA } from "@/components/extraccion-ia";
 
 import {
-import { convertirMoneda } from "@/lib/dinero";
   Panel,
   TituloPanel,
   Boton,
