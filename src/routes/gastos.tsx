@@ -226,14 +226,14 @@ function Gastos() {
     setEstado((e) => ({ ...e, gastos: [g, ...e.gastos] }));
 
     registrar(
-      "Registro de gasto",
+      "Captura de gasto en borrador",
       `${g.proveedor} por ${mxn(g.montoMXN)} (${g.rubro}) ${g.sinCFDI ? "sin CFDI" : "con CFDI"}.`,
     );
     setError("");
     setAviso(
       avisosPendientes.length
-        ? `Gasto de ${g.proveedor} registrado por ${mxn(g.montoMXN)}, con evidencia incompleta: ${avisosPendientes.join("; ")}. El Revisor lo verá marcado.`
-        : `Gasto de ${g.proveedor} registrado por ${mxn(g.montoMXN)}.`,
+        ? `Gasto de ${g.proveedor} guardado en borrador por ${mxn(g.montoMXN)}, con evidencia incompleta: ${avisosPendientes.join("; ")}. Complétalo antes de enviarlo a revisión.`
+        : `Gasto de ${g.proveedor} guardado en borrador por ${mxn(g.montoMXN)}. Envíalo a revisión cuando esté listo.`,
     );
     setF({
       ...f,
