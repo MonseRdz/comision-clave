@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { resta, suma } from "@/lib/dinero";
 import { useState } from "react";
-import { useStore, mxn, nuevoId } from "@/lib/store";
+import { useStore, mxn, nuevoId, cuentaComprobado } from "@/lib/store";
 import {
   Panel,
   TituloPanel,
@@ -135,7 +135,7 @@ function Presupuestos() {
         <Tabla cabeceras={["Evento", "Rubro", "Asignado", "Comprobado", "Disponible", "Responsable"]}>
           {estado.presupuestos.map((p) => {
             const comprobado = estado.gastos
-              .filter((g) => g.eventoId === p.eventoId && g.rubro === p.rubro && g.estatus !== "Rechazado")
+              .filter((g) => g.eventoId === p.eventoId && g.rubro === p.rubro && cuentaComprobado(g))
               .reduce((s, g) => suma(s, g.montoMXN), 0);
             return (
               <tr key={p.id}>

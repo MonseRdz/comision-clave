@@ -41,7 +41,15 @@ export const Route = createFileRoute("/gastos")({
 });
 
 const tonoEstatus = (e: Gasto["estatus"]) =>
-  e === "Aprobado" ? "ok" : e === "Rechazado" ? "error" : e === "Devuelto para corrección" ? "alerta" : "neutro";
+  e === "Aprobado"
+    ? "ok"
+    : e === "Rechazado"
+      ? "error"
+      : e === "Devuelto para corrección"
+        ? "alerta"
+        : e === "Borrador"
+          ? "marca"
+          : "neutro";
 
 function Gastos() {
   const { estado, setEstado, registrar, usuarioActual } = useStore();
@@ -193,7 +201,7 @@ function Gastos() {
         : [],
       participantesIds: participantes,
       archivos: adjuntos,
-      estatus: "Registrado",
+      estatus: "Borrador",
       observaciones: "",
       comisionadoId: usuarioActual.id,
       creadoEn: hoyISO(),
@@ -218,14 +226,14 @@ function Gastos() {
     setEstado((e) => ({ ...e, gastos: [g, ...e.gastos] }));
 
     registrar(
-      "Registro de gasto",
+      "Captura de gasto en borrador",
       `${g.proveedor} por ${mxn(g.montoMXN)} (${g.rubro}) ${g.sinCFDI ? "sin CFDI" : "con CFDI"}.`,
     );
     setError("");
     setAviso(
       avisosPendientes.length
-        ? `Gasto de ${g.proveedor} registrado por ${mxn(g.montoMXN)}, con evidencia incompleta: ${avisosPendientes.join("; ")}. El Revisor lo verá marcado.`
-        : `Gasto de ${g.proveedor} registrado por ${mxn(g.montoMXN)}.`,
+        ? `Gasto de ${g.proveedor} guardado en borrador por ${mxn(g.montoMXN)}, con evidencia incompleta: ${avisosPendientes.join("; ")}. Complétalo antes de enviarlo a revisión.`
+        : `Gasto de ${g.proveedor} guardado en borrador por ${mxn(g.montoMXN)}. Envíalo a revisión cuando esté listo.`,
     );
     setF({
       ...f,
@@ -245,6 +253,20 @@ function Gastos() {
     setIaMeta(null);
   }
 
+
+  function enviarARevision(g: Gasto) {
+    if (g.estatus !== "Borrador") return;
+    setEstado((e) => ({
+      ...e,
+      gastos: e.gastos.map((x) => (x.id === g.id ? { ...x, estatus: "Registrado" as const } : x)),
+    }));
+    registrar(
+      "Envío a revisión",
+      `Gasto de ${g.proveedor} por ${mxn(g.montoMXN)} (${g.rubro}) enviado a revisión.`,
+    );
+    setError("");
+    setAviso(`Gasto de "${g.proveedor}" enviado a revisión.`);
+  }
 
   function guardarEdicion(g: Gasto) {
     if (esInmutable(g)) {
@@ -615,10 +637,19 @@ function Gastos() {
       </Panel>
 
       <Panel>
-        <TituloPanel sub="Comprobaciones registradas y su estatus de dictamen.">Mis gastos</TituloPanel>
+        <TituloPanel sub="Los borradores solo los ves tú y no cuentan en presupuestos ni reportes hasta enviarlos a revisión.">
+          Mis gastos
+        </TituloPanel>
         <Tabla cabeceras={["Fecha", "Proveedor", "Rubro", "Monto", "MXN", "CFDI", "Estatus", "Acciones"]}>
           {mios.map((g) => (
-            <tr key={g.id}>
+            <tr
+              key={g.id}
+              className={
+                g.estatus === "Borrador"
+                  ? "border-l-4 border-primary bg-primary/10"
+                  : undefined
+              }
+            >
               <Celda>{fechaCorta(g.creadoEn)}</Celda>
               <Celda>{g.proveedor}</Celda>
               <Celda>{g.rubro}</Celda>
@@ -636,6 +667,9 @@ function Gastos() {
               </Celda>
               <Celda>
                 <div className="flex flex-wrap gap-2">
+                  {g.estatus === "Borrador" ? (
+                    <Boton onClick={() => enviarARevision(g)}>Enviar a revisión</Boton>
+                  ) : null}
                   <Boton variante="neutro" onClick={() => setDetalle(detalle === g.id ? null : g.id)}>
                     {detalle === g.id ? "Ocultar" : "Ver adjuntos"}
                   </Boton>

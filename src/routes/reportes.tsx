@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { useStore, mxn, diasDesde, fechaCorta } from "@/lib/store";
+import { useStore, mxn, diasDesde, fechaCorta, cuentaComprobado, estaPendiente, esBorrador } from "@/lib/store";
 import { Panel, TituloPanel, Boton, Selector, Campo, Tabla, Celda, Etiqueta, Aviso } from "@/components/glass";
 import { suma } from "@/lib/dinero";
 
@@ -28,7 +28,7 @@ function Reportes() {
   const [generado, setGenerado] = useState(false);
 
   const evento = estado.eventos.find((e) => e.id === eventoId);
-  const gastosEv = estado.gastos.filter((g) => g.eventoId === eventoId);
+  const gastosEv = estado.gastos.filter((g) => g.eventoId === eventoId && !esBorrador(g));
 
   return (
     <div className="grid gap-4 pt-4">
@@ -39,9 +39,9 @@ function Reportes() {
         <Tabla cabeceras={["Evento", "% comprobado", "Comisionados pendientes", "Días de atraso máximo"]}>
           {estado.eventos.map((ev) => {
             const asig = estado.presupuestos.filter((p) => p.eventoId === ev.id).reduce((s, p) => suma(s, p.monto), 0);
-            const gs = estado.gastos.filter((g) => g.eventoId === ev.id);
-            const comp = gs.filter((g) => g.estatus !== "Rechazado").reduce((s, g) => suma(s, g.montoMXN), 0);
-            const pend = gs.filter((g) => g.estatus !== "Aprobado" && g.estatus !== "Rechazado");
+            const gs = estado.gastos.filter((g) => g.eventoId === ev.id && !esBorrador(g));
+            const comp = gs.filter(cuentaComprobado).reduce((s, g) => suma(s, g.montoMXN), 0);
+            const pend = gs.filter(estaPendiente);
             const nombres = [
               ...new Set(pend.map((g) => estado.usuarios.find((u) => u.id === g.comisionadoId)?.nombre ?? "—")),
             ];

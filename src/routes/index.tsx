@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useStore, mxn, diasDesde } from "@/lib/store";
+import { useStore, mxn, diasDesde, cuentaComprobado, estaPendiente, esBorrador } from "@/lib/store";
 import { Panel, TituloPanel, Etiqueta, Aviso, Tabla, Celda } from "@/components/glass";
 import { resta, suma } from "@/lib/dinero";
 
@@ -34,16 +34,15 @@ function Indicador({ titulo, valor, nota }: { titulo: string; valor: string; not
 
 function Tablero() {
   const { estado } = useStore();
-  const pendiente = (e: string) => e !== "Aprobado" && e !== "Rechazado";
 
   const asignado = estado.presupuestos.reduce((s, p) => suma(s, p.monto), 0);
   const comprobado = estado.gastos
-    .filter((g) => g.estatus !== "Rechazado")
+    .filter(cuentaComprobado)
     .reduce((s, g) => suma(s, g.montoMXN), 0);
   const disponible = resta(asignado, comprobado);
   const pct = asignado ? Math.round((comprobado / asignado) * 100) : 0;
 
-  const pendientes = estado.gastos.filter((g) => pendiente(g.estatus));
+  const pendientes = estado.gastos.filter(estaPendiente);
   const bucket = (min: number, max: number) =>
     pendientes.filter((g) => diasDesde(g.creadoEn) >= min && diasDesde(g.creadoEn) <= max);
   const menos3 = bucket(0, 2);
@@ -107,9 +106,9 @@ function Tablero() {
         <Tabla cabeceras={["Evento", "Clave", "Asignado", "Comprobado", "Disponible", "% comprobado", "Semáforo"]}>
           {estado.eventos.map((ev) => {
             const asig = estado.presupuestos.filter((p) => p.eventoId === ev.id).reduce((s, p) => suma(s, p.monto), 0);
-            const gastosEv = estado.gastos.filter((g) => g.eventoId === ev.id);
-            const comp = gastosEv.filter((g) => g.estatus !== "Rechazado").reduce((s, g) => suma(s, g.montoMXN), 0);
-            const pend = gastosEv.filter((g) => pendiente(g.estatus));
+            const gastosEv = estado.gastos.filter((g) => g.eventoId === ev.id && !esBorrador(g));
+            const comp = gastosEv.filter(cuentaComprobado).reduce((s, g) => suma(s, g.montoMXN), 0);
+            const pend = gastosEv.filter(estaPendiente);
             const rojo = comp > asig || gastosEv.some((g) => g.estatus === "Rechazado");
             const tono = rojo ? "error" : pend.length ? "alerta" : "ok";
             const texto = rojo ? "Rojo" : pend.length ? "Amarillo" : "Verde";

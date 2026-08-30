@@ -59,6 +59,7 @@ export type IaExtraccion = {
 
 
 export type EstatusGasto =
+  | "Borrador"
   | "Registrado"
   | "Validado por Revisor"
   | "Devuelto para corrección"

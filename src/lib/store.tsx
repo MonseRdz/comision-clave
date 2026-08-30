@@ -236,4 +236,14 @@ export const diasDesde = (iso: string) =>
 
 export const esInmutable = (g: Gasto) => g.estatus === "Aprobado" || g.estatus === "Rechazado";
 
+/** Un borrador aún no es un gasto ejercido: no cuenta en presupuestos, tablero ni reportes. */
+export const esBorrador = (g: Gasto) => g.estatus === "Borrador";
+
+/** Gastos que suman al comprobado (excluye borradores y rechazados). */
+export const cuentaComprobado = (g: Gasto) => g.estatus !== "Borrador" && g.estatus !== "Rechazado";
+
+/** Gastos presentados y aún sin dictamen final. */
+export const estaPendiente = (g: Gasto) =>
+  g.estatus !== "Borrador" && g.estatus !== "Aprobado" && g.estatus !== "Rechazado";
+
 export const nuevoId = (p: string) => `${p}${Date.now()}${Math.random().toString(16).slice(2, 5)}`;
