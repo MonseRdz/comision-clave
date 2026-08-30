@@ -165,6 +165,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             id: `l${Date.now()}${Math.random().toString(16).slice(2, 6)}`,
             fecha: hoyISO(),
             actor: actor ? `${actor.nombre} (${actor.rol})` : "Sistema",
+            actor_id: e.usuarioActualId,
             accion,
             detalle,
           },
