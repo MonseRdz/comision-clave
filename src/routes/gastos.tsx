@@ -637,10 +637,19 @@ function Gastos() {
       </Panel>
 
       <Panel>
-        <TituloPanel sub="Comprobaciones registradas y su estatus de dictamen.">Mis gastos</TituloPanel>
+        <TituloPanel sub="Los borradores solo los ves tú y no cuentan en presupuestos ni reportes hasta enviarlos a revisión.">
+          Mis gastos
+        </TituloPanel>
         <Tabla cabeceras={["Fecha", "Proveedor", "Rubro", "Monto", "MXN", "CFDI", "Estatus", "Acciones"]}>
           {mios.map((g) => (
-            <tr key={g.id}>
+            <tr
+              key={g.id}
+              className={
+                g.estatus === "Borrador"
+                  ? "border-l-4 border-primary bg-primary/10"
+                  : undefined
+              }
+            >
               <Celda>{fechaCorta(g.creadoEn)}</Celda>
               <Celda>{g.proveedor}</Celda>
               <Celda>{g.rubro}</Celda>
