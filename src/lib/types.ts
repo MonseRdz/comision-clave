@@ -66,6 +66,15 @@ export type EstatusGasto =
   | "Aprobado"
   | "Rechazado";
 
+/** Régimen bajo el que se comprueba el gasto. */
+export const TIPOS_COMPROBANTE = [
+  "CFDI nacional",
+  "Comprobante extranjero",
+  "Sin comprobante fiscal",
+] as const;
+
+export type TipoComprobante = (typeof TIPOS_COMPROBANTE)[number];
+
 export type Gasto = {
   id: string;
   eventoId: string;
@@ -75,7 +84,11 @@ export type Gasto = {
   moneda: "MXN" | "USD" | "EUR";
   tipoCambio: number;
   montoMXN: number;
+  /** Valor derivado: verdadero solo cuando el tipo es "Sin comprobante fiscal". */
   sinCFDI: boolean;
+  tipoComprobante: TipoComprobante;
+  /** País de emisión, obligatorio en comprobantes extranjeros. */
+  paisEmision: string;
   justificacion: string;
   origenPais: string;
   origenCiudad: string;
