@@ -59,6 +59,7 @@ function estadoVacio(): Estado {
     justificacionesSinCFDI: [],
     proveedores: [],
     topeSinComprobante: 2000,
+    rfcAdemeba: "",
     versionReglas: "ADEMEBA v1.0",
     usuarioActualId: "",
   };

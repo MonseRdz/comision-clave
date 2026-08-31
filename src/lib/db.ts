@@ -94,6 +94,12 @@ export async function cargarDatos(): Promise<DatosOperacion> {
       if (g.dictaminador_id) base.dictaminadorId = g.dictaminador_id;
       if (g.motivo_rechazo) base.motivoRechazo = g.motivo_rechazo;
       if (g.folio_delegacion) base.folioDelegacion = g.folio_delegacion;
+      const fila = g as Record<string, unknown>;
+      if (fila["subtotal"] !== null && fila["subtotal"] !== undefined) base.subtotal = Number(fila["subtotal"]);
+      if (fila["iva"] !== null && fila["iva"] !== undefined) base.iva = Number(fila["iva"]);
+      if (fila["uuid_fiscal"]) base.uuidFiscal = String(fila["uuid_fiscal"]);
+      if (fila["rfc_emisor"]) base.rfcEmisor = String(fila["rfc_emisor"]);
+      if (fila["rfc_receptor"]) base.rfcReceptor = String(fila["rfc_receptor"]);
       const ia = (g as { ia_extraccion?: unknown }).ia_extraccion as Gasto["iaExtraccion"] | undefined;
       if (ia && Object.keys(ia).length) base.iaExtraccion = ia;
       return base;
@@ -127,6 +133,7 @@ export async function cargarDatos(): Promise<DatosOperacion> {
     justificacionesSinCFDI: porTipo("justificacion"),
     proveedores: porTipo("proveedor"),
     topeSinComprobante: Number(config.data?.tope_sin_comprobante ?? 2000),
+    rfcAdemeba: String((config.data as { rfc_ademeba?: string } | null)?.rfc_ademeba ?? ""),
     versionReglas: config.data?.version_reglas ?? "ADEMEBA v1.0",
   };
 }
@@ -222,6 +229,11 @@ const TABLAS: Tabla[] = [
         motivo_rechazo: g.motivoRechazo ?? null,
         folio_delegacion: g.folioDelegacion ?? null,
         ia_extraccion: g.iaExtraccion ?? {},
+        subtotal: g.subtotal ?? null,
+        iva: g.iva ?? null,
+        uuid_fiscal: g.uuidFiscal ?? null,
+        rfc_emisor: g.rfcEmisor ?? null,
+        rfc_receptor: g.rfcReceptor ?? null,
       })),
 
   },
@@ -264,7 +276,12 @@ const TABLAS: Tabla[] = [
     nombre: "configuracion",
     pk: "id",
     filas: (e) => [
-      { id: 1, tope_sin_comprobante: e.topeSinComprobante, version_reglas: e.versionReglas },
+      {
+        id: 1,
+        tope_sin_comprobante: e.topeSinComprobante,
+        version_reglas: e.versionReglas,
+        rfc_ademeba: e.rfcAdemeba ?? "",
+      },
     ],
   },
 ];
