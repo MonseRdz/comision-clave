@@ -845,14 +845,21 @@ function Gastos() {
               </Celda>
               <Celda>
                 <Etiqueta tono={tonoEstatus(g.estatus)}>{g.estatus}</Etiqueta>
-                {g.observaciones ? (
+                {g.estatus === "Devuelto para corrección" && g.observaciones ? (
+                  <p className="mt-1 text-xs font-semibold text-amber-600">
+                    Motivo de devolución: {g.observaciones}
+                  </p>
+                ) : null}
+                {g.observaciones && g.estatus !== "Devuelto para corrección" ? (
                   <p className="mt-1 text-xs">Observación: {g.observaciones}</p>
                 ) : null}
               </Celda>
               <Celda>
                 <div className="flex flex-wrap gap-2">
-                  {g.estatus === "Borrador" ? (
-                    <Boton onClick={() => enviarARevision(g)}>Enviar a revisión</Boton>
+                  {g.estatus === "Borrador" || g.estatus === "Devuelto para corrección" ? (
+                    <Boton onClick={() => enviarARevision(g)}>
+                      {g.estatus === "Borrador" ? "Enviar a revisión" : "Reenviar a revisión"}
+                    </Boton>
                   ) : null}
                   <Boton variante="neutro" onClick={() => setDetalle(detalle === g.id ? null : g.id)}>
                     {detalle === g.id ? "Ocultar" : "Ver adjuntos"}
