@@ -316,17 +316,17 @@ function Gastos() {
 
 
   function enviarARevision(g: Gasto) {
-    if (g.estatus !== "Borrador") return;
+    if (g.estatus !== "Borrador" && g.estatus !== "Devuelto para corrección") return;
     setEstado((e) => ({
       ...e,
       gastos: e.gastos.map((x) => (x.id === g.id ? { ...x, estatus: "Registrado" as const } : x)),
     }));
     registrar(
-      "Envío a revisión",
-      `Gasto de ${g.proveedor} por ${mxn(g.montoMXN)} (${g.rubro}) enviado a revisión.`,
+      g.estatus === "Borrador" ? "Envío a revisión" : "Reenvío a revisión",
+      `Gasto de ${g.proveedor} por ${mxn(g.montoMXN)} (${g.rubro}) ${g.estatus === "Borrador" ? "enviado" : "reenviado"} a revisión.`,
     );
     setError("");
-    setAviso(`Gasto de "${g.proveedor}" enviado a revisión.`);
+    setAviso(`Gasto de "${g.proveedor}" ${g.estatus === "Borrador" ? "enviado" : "reenviado"} a revisión.`);
   }
 
   function guardarEdicion(g: Gasto) {
@@ -845,14 +845,21 @@ function Gastos() {
               </Celda>
               <Celda>
                 <Etiqueta tono={tonoEstatus(g.estatus)}>{g.estatus}</Etiqueta>
-                {g.observaciones ? (
+                {g.estatus === "Devuelto para corrección" && g.observaciones ? (
+                  <p className="mt-1 text-xs font-semibold text-warning">
+                    Motivo de devolución: {g.observaciones}
+                  </p>
+                ) : null}
+                {g.observaciones && g.estatus !== "Devuelto para corrección" ? (
                   <p className="mt-1 text-xs">Observación: {g.observaciones}</p>
                 ) : null}
               </Celda>
               <Celda>
                 <div className="flex flex-wrap gap-2">
-                  {g.estatus === "Borrador" ? (
-                    <Boton onClick={() => enviarARevision(g)}>Enviar a revisión</Boton>
+                  {g.estatus === "Borrador" || g.estatus === "Devuelto para corrección" ? (
+                    <Boton onClick={() => enviarARevision(g)}>
+                      {g.estatus === "Borrador" ? "Enviar a revisión" : "Reenviar a revisión"}
+                    </Boton>
                   ) : null}
                   <Boton variante="neutro" onClick={() => setDetalle(detalle === g.id ? null : g.id)}>
                     {detalle === g.id ? "Ocultar" : "Ver adjuntos"}
