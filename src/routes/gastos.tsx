@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { convertirMoneda } from "@/lib/dinero";
 import { useState } from "react";
 import { useStore, mxn, nuevoId, fechaCorta, esInmutable, hoyISO } from "@/lib/store";
-import type { Archivo, Escala, Gasto, IaExtraccion } from "@/lib/types";
+import type { Archivo, Escala, Gasto, IaExtraccion, TipoComprobante } from "@/lib/types";
+import { TIPOS_COMPROBANTE } from "@/lib/types";
 import { PAISES, rutaTexto } from "@/lib/paises";
 import { buscarDuplicado, gastoRepetido, mensajeDuplicado } from "@/lib/duplicados";
 
@@ -157,14 +158,31 @@ function Gastos() {
     if (monto <= 0) return setError("El monto debe ser mayor a cero.");
     if (f.moneda !== "MXN" && tc <= 0) return setError("Captura el tipo de cambio manual.");
     if (participantes.length === 0) return setError("Selecciona al menos un participante autorizado.");
-    if (f.sinCFDI) {
+    if (esSinComprobante) {
       if (montoMXN > estado.topeSinComprobante)
         return setError(
-          `Un gasto sin CFDI no puede exceder el tope de ${mxn(estado.topeSinComprobante)}.`,
+          `Un gasto sin comprobante fiscal no puede exceder el tope de ${mxn(estado.topeSinComprobante)}.`,
         );
-      if (!f.justificacion.trim()) return setError("La justificación es obligatoria en gastos sin CFDI.");
+      if (!f.justificacion.trim())
+        return setError("La justificación es obligatoria en gastos sin comprobante fiscal.");
+      if (archivos.length === 0)
+        return setError(
+          "Un gasto sin comprobante fiscal requiere al menos una evidencia adjunta: vale de caja firmado, recibo simple, ticket o comprobante de pago.",
+        );
+    } else if (esExtranjero) {
+      if (!f.paisEmision) return setError("Selecciona el país de emisión del comprobante extranjero.");
+      if (!f.justificacion.trim())
+        return setError("La descripción es obligatoria en un comprobante extranjero.");
+      if (f.moneda !== "MXN" && (tc <= 0 || tc === 1))
+        return setError(
+          "En un comprobante extranjero en moneda distinta a MXN el tipo de cambio es obligatorio y debe ser distinto de 1.",
+        );
+      if (archivos.length === 0)
+        return setError(
+          "Un comprobante extranjero requiere adjuntar la evidencia de pago, además de la factura.",
+        );
     } else if (archivos.length === 0) {
-      return setError("Adjunta la factura (XML/PDF) o marca el gasto como Sin CFDI.");
+      return setError("Adjunta la factura (XML/PDF) del CFDI nacional o cambia el tipo de comprobante.");
     }
 
     const avisosPendientes: string[] = [];
@@ -177,23 +195,27 @@ function Gastos() {
         );
     }
 
-    if (subtotalNum !== null && ivaNum !== null && Math.abs(subtotalNum + ivaNum - monto) > 0.01)
-      avisosPendientes.push(
-        `el subtotal (${subtotalNum.toFixed(2)}) más el IVA (${ivaNum.toFixed(2)}) no cuadra con el total (${monto.toFixed(2)})`,
-      );
-    const rfcEsperado = (estado.rfcAdemeba || "").trim().toUpperCase();
-    if (fiscal.rfcReceptor && rfcEsperado && fiscal.rfcReceptor.toUpperCase() !== rfcEsperado)
-      avisosPendientes.push(
-        `el RFC del receptor (${fiscal.rfcReceptor.toUpperCase()}) no coincide con el RFC de ADEMEBA (${rfcEsperado})`,
-      );
-    if (fiscal.uuidFiscal) {
-      const repetidoUuid = estado.gastos.find(
-        (x) => (x.uuidFiscal ?? "").toUpperCase() === fiscal.uuidFiscal.toUpperCase(),
-      );
-      if (repetidoUuid)
+    // Las validaciones fiscales solo aplican al régimen de CFDI nacional:
+    // un comprobante extranjero no tiene RFC ni folio fiscal mexicano.
+    if (esCFDI) {
+      if (subtotalNum !== null && ivaNum !== null && Math.abs(subtotalNum + ivaNum - monto) > 0.01)
         avisosPendientes.push(
-          `este comprobante fiscal ya fue registrado en el gasto ${repetidoUuid.id}`,
+          `el subtotal (${subtotalNum.toFixed(2)}) más el IVA (${ivaNum.toFixed(2)}) no cuadra con el total (${monto.toFixed(2)})`,
         );
+      const rfcEsperado = (estado.rfcAdemeba || "").trim().toUpperCase();
+      if (fiscal.rfcReceptor && rfcEsperado && fiscal.rfcReceptor.toUpperCase() !== rfcEsperado)
+        avisosPendientes.push(
+          `el RFC del receptor (${fiscal.rfcReceptor.toUpperCase()}) no coincide con el RFC de ADEMEBA (${rfcEsperado})`,
+        );
+      if (fiscal.uuidFiscal) {
+        const repetidoUuid = estado.gastos.find(
+          (x) => (x.uuidFiscal ?? "").toUpperCase() === fiscal.uuidFiscal.toUpperCase(),
+        );
+        if (repetidoUuid)
+          avisosPendientes.push(
+            `este comprobante fiscal ya fue registrado en el gasto ${repetidoUuid.id}`,
+          );
+      }
     }
 
     const adjuntos: Archivo[] = esTransporte
@@ -213,7 +235,9 @@ function Gastos() {
       moneda: f.moneda,
       tipoCambio: tc,
       montoMXN,
-      sinCFDI: f.sinCFDI,
+      sinCFDI: esSinComprobante,
+      tipoComprobante: f.tipoComprobante,
+      paisEmision: esExtranjero ? f.paisEmision : "",
       justificacion: f.justificacion.trim(),
       origenPais: esTransporte ? f.origenPais : "",
       origenCiudad: esTransporte ? f.origenCiudad.trim() : "",
@@ -257,7 +281,7 @@ function Gastos() {
 
     registrar(
       "Captura de gasto en borrador",
-      `${g.proveedor} por ${mxn(g.montoMXN)} (${g.rubro}) ${g.sinCFDI ? "sin CFDI" : "con CFDI"}.`,
+      `${g.proveedor} por ${mxn(g.montoMXN)} (${g.rubro}) · ${g.tipoComprobante}.`,
     );
     setError("");
     setAviso(
@@ -272,7 +296,8 @@ function Gastos() {
       subtotal: "",
       iva: "",
       justificacion: "",
-      sinCFDI: false,
+      tipoComprobante: "CFDI nacional" as TipoComprobante,
+      paisEmision: "",
       moneda: "MXN",
       tipoCambio: "1",
       origenCiudad: "",
