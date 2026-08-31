@@ -102,6 +102,7 @@ export function BarraApilada({
 /** Barra simple horizontal, ancho proporcional a un máximo. */
 export function BarraSimple({
   nombre,
+  sub,
   cifra,
   valor,
   maximo,
@@ -110,6 +111,8 @@ export function BarraSimple({
   titulo,
 }: {
   nombre: string;
+  /** Texto secundario en letra chica debajo del nombre (p. ej. el rol). */
+  sub?: string;
   cifra: string;
   valor: number;
   maximo: number;
@@ -121,7 +124,10 @@ export function BarraSimple({
   return (
     <div>
       <div className="flex items-baseline justify-between gap-3 text-xs text-ink-3">
-        <span className="truncate">{nombre}</span>
+        <span className="truncate">
+          {nombre}
+          {sub ? <span className="block text-[10px] text-ink-3/80">{sub}</span> : null}
+        </span>
         <span className="cifra shrink-0">{cifra}</span>
       </div>
       <div className="mt-1" style={{ height: 22 }}>

@@ -94,13 +94,15 @@ function Tablero() {
   const maxEtapa = Math.max(...etapas.map((e) => e.n), 0);
 
   // 7.3 Concentración por comisionado (monto pendiente de dictamen).
-  const porComisionado = estado.usuarios
-    .filter((u) => u.rol === "Comisionado")
-    .map((u) => {
-      const gs = pendientes.filter((g) => g.comisionadoId === u.id);
+  // Se agrupa por comisionadoId del gasto, sin filtrar por rol: quien ejerció
+  // el recurso es el comisionado del gasto, tenga el rol que tenga.
+  const porComisionado = [...new Set(pendientes.map((g) => g.comisionadoId))]
+    .map((id) => {
+      const gs = pendientes.filter((g) => g.comisionadoId === id);
       const monto = gs.reduce((s, g) => suma(s, g.montoMXN), 0);
       const dias = gs.length ? Math.max(...gs.map((g) => diasDesde(g.creadoEn))) : 0;
-      return { id: u.id, nombre: u.nombre, monto, dias };
+      const u = estado.usuarios.find((x) => x.id === id);
+      return { id, nombre: u?.nombre ?? "Sin identificar", rol: u?.rol ?? "", monto, dias };
     })
     .filter((x) => x.monto > 0)
     .sort((a, b) => b.monto - a.monto)
@@ -367,6 +369,7 @@ function Tablero() {
                 <BarraSimple
                   key={c.id}
                   nombre={c.nombre}
+                  sub={c.rol}
                   cifra={`${mxn(c.monto)} · ${c.dias} días`}
                   valor={c.monto}
                   maximo={maxComisionado}
