@@ -58,6 +58,8 @@ function Gastos() {
     rubro: estado.rubros[0] ?? "",
     proveedor: "",
     monto: "",
+    subtotal: "",
+    iva: "",
     moneda: "MXN" as Gasto["moneda"],
     tipoCambio: "1",
     sinCFDI: false,
@@ -74,6 +76,7 @@ function Gastos() {
   const [aviso, setAviso] = useState("");
   const [error, setError] = useState("");
   const [iaMeta, setIaMeta] = useState<IaExtraccion | null>(null);
+  const [fiscal, setFiscal] = useState({ uuidFiscal: "", rfcEmisor: "", rfcReceptor: "" });
 
 
   const [detalle, setDetalle] = useState<string | null>(null);
@@ -84,6 +87,8 @@ function Gastos() {
   const nominales = evento?.participantes ?? [];
   const faltanPases = esTransporte ? nominales.filter((p) => !pases[p.id]) : [];
   const monto = Number(f.monto) || 0;
+  const subtotalNum = f.subtotal.trim() === "" ? null : Number(f.subtotal);
+  const ivaNum = f.iva.trim() === "" ? null : Number(f.iva);
   const tc = f.moneda === "MXN" ? 1 : Number(f.tipoCambio) || 0;
   const montoMXN = convertirMoneda(monto, tc);
 
@@ -171,6 +176,25 @@ function Gastos() {
         );
     }
 
+    if (subtotalNum !== null && ivaNum !== null && Math.abs(subtotalNum + ivaNum - monto) > 0.01)
+      avisosPendientes.push(
+        `el subtotal (${subtotalNum.toFixed(2)}) más el IVA (${ivaNum.toFixed(2)}) no cuadra con el total (${monto.toFixed(2)})`,
+      );
+    const rfcEsperado = (estado.rfcAdemeba || "").trim().toUpperCase();
+    if (fiscal.rfcReceptor && rfcEsperado && fiscal.rfcReceptor.toUpperCase() !== rfcEsperado)
+      avisosPendientes.push(
+        `el RFC del receptor (${fiscal.rfcReceptor.toUpperCase()}) no coincide con el RFC de ADEMEBA (${rfcEsperado})`,
+      );
+    if (fiscal.uuidFiscal) {
+      const repetidoUuid = estado.gastos.find(
+        (x) => (x.uuidFiscal ?? "").toUpperCase() === fiscal.uuidFiscal.toUpperCase(),
+      );
+      if (repetidoUuid)
+        avisosPendientes.push(
+          `este comprobante fiscal ya fue registrado en el gasto ${repetidoUuid.id}`,
+        );
+    }
+
     const adjuntos: Archivo[] = esTransporte
       ? [...archivos, ...nominales.map((p) => pases[p.id]).filter((a): a is Archivo => Boolean(a))]
       : archivos;
@@ -206,6 +230,11 @@ function Gastos() {
       comisionadoId: usuarioActual.id,
       creadoEn: hoyISO(),
     };
+    if (subtotalNum !== null) g.subtotal = subtotalNum;
+    if (ivaNum !== null) g.iva = ivaNum;
+    if (fiscal.uuidFiscal) g.uuidFiscal = fiscal.uuidFiscal;
+    if (fiscal.rfcEmisor) g.rfcEmisor = fiscal.rfcEmisor;
+    if (fiscal.rfcReceptor) g.rfcReceptor = fiscal.rfcReceptor;
     const repetido = gastoRepetido(estado.gastos, g);
     if (repetido)
       return setError(
@@ -232,13 +261,15 @@ function Gastos() {
     setError("");
     setAviso(
       avisosPendientes.length
-        ? `Gasto de ${g.proveedor} guardado en borrador por ${mxn(g.montoMXN)}, con evidencia incompleta: ${avisosPendientes.join("; ")}. Complétalo antes de enviarlo a revisión.`
+        ? `Gasto de ${g.proveedor} guardado en borrador por ${mxn(g.montoMXN)}. Revisa: ${avisosPendientes.join("; ")}. Complétalo antes de enviarlo a revisión.`
         : `Gasto de ${g.proveedor} guardado en borrador por ${mxn(g.montoMXN)}. Envíalo a revisión cuando esté listo.`,
     );
     setF({
       ...f,
       proveedor: "",
       monto: "",
+      subtotal: "",
+      iva: "",
       justificacion: "",
       sinCFDI: false,
       moneda: "MXN",
@@ -251,6 +282,7 @@ function Gastos() {
     setArchivos([]);
     setPases({});
     setIaMeta(null);
+    setFiscal({ uuidFiscal: "", rfcEmisor: "", rfcReceptor: "" });
   }
 
 
@@ -303,11 +335,13 @@ function Gastos() {
       {aviso ? <Aviso>{aviso}</Aviso> : null}
 
       <ExtraccionIA
-        onConfirmar={({ campos, archivo, meta }) => {
+        onConfirmar={({ campos, archivo, meta, fiscal: fis }) => {
           setF((prev) => ({
             ...prev,
             proveedor: campos.proveedor || prev.proveedor,
             monto: campos.monto || prev.monto,
+            subtotal: fis.subtotal || prev.subtotal,
+            iva: fis.iva || prev.iva,
             moneda: (["MXN", "USD", "EUR"].includes(campos.moneda)
               ? campos.moneda
               : prev.moneda) as Gasto["moneda"],
@@ -316,6 +350,11 @@ function Gastos() {
           }));
           setArchivos((a) => (a.some((x) => x.nombre === archivo.nombre) ? a : [...a, archivo]));
           setIaMeta(meta);
+          setFiscal({
+            uuidFiscal: fis.uuidFiscal,
+            rfcEmisor: fis.rfcEmisor,
+            rfcReceptor: fis.rfcReceptor,
+          });
           setError("");
         }}
       />
@@ -353,7 +392,31 @@ function Gastos() {
           <Campo etiqueta="Proveedor o concepto" id="g-prov">
             <Entrada id="g-prov" value={f.proveedor} onChange={(e) => setF({ ...f, proveedor: e.target.value })} />
           </Campo>
-          <Campo etiqueta="Monto" id="g-monto">
+          <Campo etiqueta="Subtotal" id="g-subtotal" ayuda="Opcional. Se toma del CFDI cuando está disponible.">
+            <Entrada
+              id="g-subtotal"
+              type="number"
+              min={0}
+              step="0.01"
+              value={f.subtotal}
+              onChange={(e) => setF({ ...f, subtotal: e.target.value })}
+            />
+          </Campo>
+          <Campo etiqueta="IVA" id="g-iva" ayuda="Opcional. Impuestos trasladados del CFDI.">
+            <Entrada
+              id="g-iva"
+              type="number"
+              min={0}
+              step="0.01"
+              value={f.iva}
+              onChange={(e) => setF({ ...f, iva: e.target.value })}
+            />
+          </Campo>
+          <Campo
+            etiqueta="Total (importe que se comprueba)"
+            id="g-monto"
+            ayuda="Siempre el total pagado del comprobante."
+          >
             <Entrada
               id="g-monto"
               type="number"
@@ -397,7 +460,19 @@ function Gastos() {
           </Campo>
 
           <div className="md:col-span-3">
-            <Aviso>Equivalente en pesos: <strong>{mxn(montoMXN)}</strong></Aviso>
+            <Aviso>
+              Subtotal: <strong>{f.subtotal || "—"}</strong> · IVA: <strong>{f.iva || "—"}</strong> · Total (se
+              comprueba): <strong>{f.monto || "—"}</strong> {f.moneda} · Equivalente en pesos:{" "}
+              <strong>{mxn(montoMXN)}</strong>
+              {fiscal.uuidFiscal ? (
+                <>
+                  <br />
+                  UUID fiscal: <strong>{fiscal.uuidFiscal}</strong> · RFC emisor:{" "}
+                  <strong>{fiscal.rfcEmisor || "—"}</strong> · RFC receptor:{" "}
+                  <strong>{fiscal.rfcReceptor || "—"}</strong>
+                </>
+              ) : null}
+            </Aviso>
           </div>
 
           {esTransporte ? (
@@ -737,6 +812,17 @@ function Gastos() {
                           g.escalas ?? [],
                           { pais: g.destinoPais, ciudad: g.destinoCiudad },
                         )}
+                      </li>
+                    ) : null}
+                    <li className="text-muted-foreground">
+                      Subtotal: {g.subtotal !== undefined ? mxn(g.subtotal) : "—"} · IVA:{" "}
+                      {g.iva !== undefined ? mxn(g.iva) : "—"} · Total que se comprueba:{" "}
+                      <strong>{mxn(g.monto)}</strong> {g.moneda}
+                    </li>
+                    {g.uuidFiscal ? (
+                      <li className="text-muted-foreground">
+                        UUID fiscal: {g.uuidFiscal} · RFC emisor: {g.rfcEmisor ?? "—"} · RFC receptor:{" "}
+                        {g.rfcReceptor ?? "—"}
                       </li>
                     ) : null}
                     <li className="text-muted-foreground">
