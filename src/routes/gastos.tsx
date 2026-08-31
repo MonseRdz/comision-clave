@@ -803,7 +803,18 @@ function Gastos() {
         <TituloPanel sub="Los borradores solo los ves tú y no cuentan en presupuestos ni reportes hasta enviarlos a revisión.">
           Mis gastos
         </TituloPanel>
-        <Tabla cabeceras={["Fecha", "Proveedor", "Rubro", "Monto", "MXN", "CFDI", "Estatus", "Acciones"]}>
+        <Tabla
+          cabeceras={[
+            "Fecha",
+            "Proveedor",
+            "Rubro",
+            "Monto",
+            "MXN",
+            "Tipo de comprobante",
+            "Estatus",
+            "Acciones",
+          ]}
+        >
           {mios.map((g) => (
             <tr
               key={g.id}
