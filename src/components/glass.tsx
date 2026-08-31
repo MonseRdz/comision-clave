@@ -38,9 +38,9 @@ type Variante = "primario" | "neutro" | "peligro" | "exito";
 
 const variantes: Record<Variante, string> = {
   primario: "bg-primary text-primary-foreground hover:brightness-95",
-  neutro: "bg-glass-strong text-foreground hover:brightness-95",
+  neutro: "bg-white text-ink hover:brightness-95",
   peligro: "bg-destructive text-destructive-foreground hover:brightness-110",
-  exito: "bg-success text-success-foreground hover:brightness-110",
+  exito: "bg-estado-verde text-white hover:brightness-110",
 };
 
 export function Boton({
@@ -83,7 +83,7 @@ export function Campo({
 }
 
 const controlCls =
-  "w-full rounded-md border-2 border-border-strong bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground";
+  "w-full rounded-[10px] border border-hair bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground";
 
 export function Entrada({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={cn(controlCls, className)} />;
@@ -105,16 +105,16 @@ export function Etiqueta({
   tono?: "neutro" | "ok" | "alerta" | "error" | "marca";
 }) {
   const tonos = {
-    neutro: "bg-secondary text-secondary-foreground border-border-strong",
-    ok: "bg-success text-success-foreground border-border-strong",
-    alerta: "bg-warning text-warning-foreground border-border-strong",
-    error: "bg-destructive text-destructive-foreground border-border-strong",
-    marca: "bg-primary text-primary-foreground border-border-strong",
+    neutro: "bg-accent-soft text-ink-2 border-hair",
+    ok: "bg-estado-verde text-white border-transparent",
+    alerta: "bg-estado-ambar text-white border-transparent",
+    error: "bg-estado-rojo text-white border-transparent",
+    marca: "bg-accent text-white border-transparent",
   } as const;
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border-2 px-2.5 py-0.5 text-xs font-semibold",
+        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold",
         tonos[tono],
       )}
     >
@@ -125,25 +125,37 @@ export function Etiqueta({
 
 export function Aviso({ children, tono = "info" }: { children: ReactNode; tono?: "info" | "alerta" | "error" }) {
   const tonos = {
-    info: "border-border-strong bg-glass-strong",
-    alerta: "border-border-strong bg-warning text-warning-foreground",
-    error: "border-border-strong bg-destructive text-destructive-foreground",
+    info: "border-hair bg-accent-soft text-ink",
+    alerta: "border-transparent bg-estado-ambar text-white",
+    error: "border-transparent bg-estado-rojo text-white",
   } as const;
   return (
-    <p role="status" className={cn("rounded-md border-2 px-3 py-2 text-sm font-medium", tonos[tono])}>
+    <p role="status" className={cn("rounded-[10px] border px-3 py-2 text-sm font-medium", tonos[tono])}>
       {children}
     </p>
   );
 }
 
-export function Tabla({ cabeceras, children }: { cabeceras: string[]; children: ReactNode }) {
+export function Tabla({
+  cabeceras,
+  children,
+  vacio,
+}: {
+  cabeceras: string[];
+  children: ReactNode;
+  /** Mensaje que sustituye la tabla cuando no hay registros. */
+  vacio?: string;
+}) {
+  const filas = Array.isArray(children) ? children.flat() : children;
+  const sinFilas = Array.isArray(filas) ? filas.filter(Boolean).length === 0 : !filas;
+  if (vacio && sinFilas) return <p className="text-sm text-muted-foreground">{vacio}</p>;
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
-          <tr className="bg-primary text-primary-foreground">
+          <tr className="bg-accent-soft text-ink">
             {cabeceras.map((c) => (
-              <th key={c} scope="col" className="border-2 border-border-strong px-3 py-2 text-left font-bold">
+              <th key={c} scope="col" className="border-b border-hair px-3 py-2 text-left text-xs font-bold uppercase tracking-wide">
                 {c}
               </th>
             ))}
@@ -156,5 +168,5 @@ export function Tabla({ cabeceras, children }: { cabeceras: string[]; children: 
 }
 
 export function Celda({ children, className }: { children?: ReactNode; className?: string }) {
-  return <td className={cn("border border-border px-3 py-2 align-top", className)}>{children}</td>;
+  return <td className={cn("border-b border-hair px-3 py-2 align-top", className)}>{children}</td>;
 }
