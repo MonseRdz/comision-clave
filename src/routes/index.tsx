@@ -369,6 +369,7 @@ function Tablero() {
                 <BarraSimple
                   key={c.id}
                   nombre={c.nombre}
+                  sub={c.rol}
                   cifra={`${mxn(c.monto)} · ${c.dias} días`}
                   valor={c.monto}
                   maximo={maxComisionado}
