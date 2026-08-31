@@ -18,6 +18,7 @@ import {
   VacioGrafica,
 } from "@/components/graficas";
 import { DIAS_DEVUELTO, DIAS_EN_DICTAMEN, MAX_ATENCION, PCT_MINIMO_RUBRO } from "@/lib/umbrales";
+import { resumenSinFactura } from "@/lib/sin-factura";
 
 
 export const Route = createFileRoute("/")({
@@ -183,6 +184,17 @@ function Tablero() {
   const atencion = filasAtencion.slice(0, MAX_ATENCION);
 
   const sumaEscrita = `Aprobado ${mxn(aprobadoTotal)} + En dictamen ${mxn(dictamenTotal)} + Sin comprobar ${mxn(sinComprobar)} = ${mxn(asignado)} de presupuesto asignado.`;
+
+  // Comprobación sin factura: indicador de observación, sin umbral definido.
+  const sinFactura = resumenSinFactura(estado.gastos);
+  const sinFacturaEventos = estado.eventos
+    .map((ev) => {
+      const r = resumenSinFactura(estado.gastos.filter((g) => g.eventoId === ev.id));
+      return { id: ev.id, nombre: ev.nombre, monto: r.monto, pct: r.pct };
+    })
+    .filter((x) => x.monto > 0)
+    .sort((a, b) => b.pct - a.pct)
+    .slice(0, 5);
 
   return (
     <div className="grid gap-4 pt-4">
@@ -426,6 +438,45 @@ function Tablero() {
         </Panel>
 
         <Panel>
+          <TituloPanel icono="i-bench" sub="Gastos aprobados sin comprobante fiscal.">
+            Comprobación sin factura
+          </TituloPanel>
+          {sinFactura.monto > 0 ? (
+            <div>
+              <p className="cifra text-2xl font-black" style={{ color: "var(--dato)" }}>
+                {mxn(sinFactura.monto)}
+              </p>
+              <p className="text-xs text-ink-2">{sinFactura.pct}% de lo comprobado y aprobado</p>
+              <p className="text-[11px] text-ink-3">
+                {mxn(sinFactura.enDictamen)} adicionales en dictamen
+              </p>
+              <ul className="mt-3 grid gap-2">
+                {sinFacturaEventos.map((ev) => (
+                  <li
+                    key={ev.id}
+                    className="flex flex-wrap items-center gap-2 rounded-[12px] border border-hair bg-card px-3 py-2"
+                  >
+                    <span className="min-w-40 flex-1 text-sm font-semibold">{ev.nombre}</span>
+                    <span className="cifra text-sm font-bold">{mxn(ev.monto)}</span>
+                    <span
+                      className="rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
+                      style={{ background: "var(--dato)" }}
+                    >
+                      {ev.pct}%
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No hay gastos aprobados sin comprobante fiscal.
+            </p>
+          )}
+        </Panel>
+
+
+        <Panel>
           <TituloPanel sub="Facultades de aprobación delegadas por el Contralor.">
             Delegaciones vigentes
           </TituloPanel>
@@ -451,7 +502,16 @@ function Tablero() {
           Semáforo de auditoría por evento
         </TituloPanel>
         <Tabla
-          cabeceras={["Evento", "Clave", "Asignado", "Comprobado", "Pend. de comprobar", "% comprobado", "Semáforo"]}
+          cabeceras={[
+            "Evento",
+            "Clave",
+            "Asignado",
+            "Comprobado",
+            "Pend. de comprobar",
+            "% comprobado",
+            "Sin factura",
+            "Semáforo",
+          ]}
           vacio="Aún no hay eventos registrados."
         >
           {estado.eventos.map((ev) => {
@@ -462,6 +522,7 @@ function Tablero() {
             const rojo = comp > asig || gastosEv.some((g) => g.estatus === "Rechazado");
             const tono = rojo ? "error" : pend.length ? "alerta" : "ok";
             const texto = rojo ? "Rojo" : pend.length ? "Amarillo" : "Verde";
+            const pctSinFactura = resumenSinFactura(gastosEv).pct;
             return (
               <tr key={ev.id}>
                 <Celda>{ev.nombre}</Celda>
@@ -470,6 +531,11 @@ function Tablero() {
                 <Celda>{mxn(comp)}</Celda>
                 <Celda>{mxn(resta(asig, comp))}</Celda>
                 <Celda>{asig ? Math.round((comp / asig) * 100) : 0}%</Celda>
+                <Celda>
+                  <span style={{ color: "var(--dato)" }} className="font-semibold">
+                    {pctSinFactura}%
+                  </span>
+                </Celda>
                 <Celda>
                   <Etiqueta tono={tono}>
                     {texto} · {pend.length} pendientes

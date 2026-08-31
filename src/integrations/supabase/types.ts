@@ -184,6 +184,7 @@ export type Database = {
           observaciones: string
           origen_ciudad: string
           origen_pais: string
+          pais_emision: string
           participantes_ids: string[]
           proveedor: string
           revisor_id: string | null
@@ -193,6 +194,7 @@ export type Database = {
           sin_cfdi: boolean
           subtotal: number | null
           tipo_cambio: number
+          tipo_comprobante: string
           uuid_fiscal: string | null
         }
         Insert: {
@@ -217,6 +219,7 @@ export type Database = {
           observaciones?: string
           origen_ciudad?: string
           origen_pais?: string
+          pais_emision?: string
           participantes_ids?: string[]
           proveedor?: string
           revisor_id?: string | null
@@ -226,6 +229,7 @@ export type Database = {
           sin_cfdi?: boolean
           subtotal?: number | null
           tipo_cambio?: number
+          tipo_comprobante?: string
           uuid_fiscal?: string | null
         }
         Update: {
@@ -250,6 +254,7 @@ export type Database = {
           observaciones?: string
           origen_ciudad?: string
           origen_pais?: string
+          pais_emision?: string
           participantes_ids?: string[]
           proveedor?: string
           revisor_id?: string | null
@@ -259,6 +264,7 @@ export type Database = {
           sin_cfdi?: boolean
           subtotal?: number | null
           tipo_cambio?: number
+          tipo_comprobante?: string
           uuid_fiscal?: string | null
         }
         Relationships: [

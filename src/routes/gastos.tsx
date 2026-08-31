@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { convertirMoneda } from "@/lib/dinero";
 import { useState } from "react";
 import { useStore, mxn, nuevoId, fechaCorta, esInmutable, hoyISO } from "@/lib/store";
-import type { Archivo, Escala, Gasto, IaExtraccion } from "@/lib/types";
+import type { Archivo, Escala, Gasto, IaExtraccion, TipoComprobante } from "@/lib/types";
+import { TIPOS_COMPROBANTE } from "@/lib/types";
 import { PAISES, rutaTexto } from "@/lib/paises";
 import { buscarDuplicado, gastoRepetido, mensajeDuplicado } from "@/lib/duplicados";
 
@@ -62,7 +63,8 @@ function Gastos() {
     iva: "",
     moneda: "MXN" as Gasto["moneda"],
     tipoCambio: "1",
-    sinCFDI: false,
+    tipoComprobante: "CFDI nacional" as TipoComprobante,
+    paisEmision: "",
     justificacion: "",
     origenPais: "MEX",
     origenCiudad: "",
@@ -84,6 +86,9 @@ function Gastos() {
 
   const evento = estado.eventos.find((e) => e.id === f.eventoId);
   const esTransporte = f.rubro === "Transporte";
+  const esCFDI = f.tipoComprobante === "CFDI nacional";
+  const esExtranjero = f.tipoComprobante === "Comprobante extranjero";
+  const esSinComprobante = f.tipoComprobante === "Sin comprobante fiscal";
   const nominales = evento?.participantes ?? [];
   const faltanPases = esTransporte ? nominales.filter((p) => !pases[p.id]) : [];
   const monto = Number(f.monto) || 0;
@@ -156,14 +161,31 @@ function Gastos() {
     if (monto <= 0) return setError("El monto debe ser mayor a cero.");
     if (f.moneda !== "MXN" && tc <= 0) return setError("Captura el tipo de cambio manual.");
     if (participantes.length === 0) return setError("Selecciona al menos un participante autorizado.");
-    if (f.sinCFDI) {
+    if (esSinComprobante) {
       if (montoMXN > estado.topeSinComprobante)
         return setError(
-          `Un gasto sin CFDI no puede exceder el tope de ${mxn(estado.topeSinComprobante)}.`,
+          `Un gasto sin comprobante fiscal no puede exceder el tope de ${mxn(estado.topeSinComprobante)}.`,
         );
-      if (!f.justificacion.trim()) return setError("La justificación es obligatoria en gastos sin CFDI.");
+      if (!f.justificacion.trim())
+        return setError("La justificación es obligatoria en gastos sin comprobante fiscal.");
+      if (archivos.length === 0)
+        return setError(
+          "Un gasto sin comprobante fiscal requiere al menos una evidencia adjunta: vale de caja firmado, recibo simple, ticket o comprobante de pago.",
+        );
+    } else if (esExtranjero) {
+      if (!f.paisEmision) return setError("Selecciona el país de emisión del comprobante extranjero.");
+      if (!f.justificacion.trim())
+        return setError("La descripción es obligatoria en un comprobante extranjero.");
+      if (f.moneda !== "MXN" && (tc <= 0 || tc === 1))
+        return setError(
+          "En un comprobante extranjero en moneda distinta a MXN el tipo de cambio es obligatorio y debe ser distinto de 1.",
+        );
+      if (archivos.length === 0)
+        return setError(
+          "Un comprobante extranjero requiere adjuntar la evidencia de pago, además de la factura.",
+        );
     } else if (archivos.length === 0) {
-      return setError("Adjunta la factura (XML/PDF) o marca el gasto como Sin CFDI.");
+      return setError("Adjunta la factura (XML/PDF) del CFDI nacional o cambia el tipo de comprobante.");
     }
 
     const avisosPendientes: string[] = [];
@@ -176,23 +198,27 @@ function Gastos() {
         );
     }
 
-    if (subtotalNum !== null && ivaNum !== null && Math.abs(subtotalNum + ivaNum - monto) > 0.01)
-      avisosPendientes.push(
-        `el subtotal (${subtotalNum.toFixed(2)}) más el IVA (${ivaNum.toFixed(2)}) no cuadra con el total (${monto.toFixed(2)})`,
-      );
-    const rfcEsperado = (estado.rfcAdemeba || "").trim().toUpperCase();
-    if (fiscal.rfcReceptor && rfcEsperado && fiscal.rfcReceptor.toUpperCase() !== rfcEsperado)
-      avisosPendientes.push(
-        `el RFC del receptor (${fiscal.rfcReceptor.toUpperCase()}) no coincide con el RFC de ADEMEBA (${rfcEsperado})`,
-      );
-    if (fiscal.uuidFiscal) {
-      const repetidoUuid = estado.gastos.find(
-        (x) => (x.uuidFiscal ?? "").toUpperCase() === fiscal.uuidFiscal.toUpperCase(),
-      );
-      if (repetidoUuid)
+    // Las validaciones fiscales solo aplican al régimen de CFDI nacional:
+    // un comprobante extranjero no tiene RFC ni folio fiscal mexicano.
+    if (esCFDI) {
+      if (subtotalNum !== null && ivaNum !== null && Math.abs(subtotalNum + ivaNum - monto) > 0.01)
         avisosPendientes.push(
-          `este comprobante fiscal ya fue registrado en el gasto ${repetidoUuid.id}`,
+          `el subtotal (${subtotalNum.toFixed(2)}) más el IVA (${ivaNum.toFixed(2)}) no cuadra con el total (${monto.toFixed(2)})`,
         );
+      const rfcEsperado = (estado.rfcAdemeba || "").trim().toUpperCase();
+      if (fiscal.rfcReceptor && rfcEsperado && fiscal.rfcReceptor.toUpperCase() !== rfcEsperado)
+        avisosPendientes.push(
+          `el RFC del receptor (${fiscal.rfcReceptor.toUpperCase()}) no coincide con el RFC de ADEMEBA (${rfcEsperado})`,
+        );
+      if (fiscal.uuidFiscal) {
+        const repetidoUuid = estado.gastos.find(
+          (x) => (x.uuidFiscal ?? "").toUpperCase() === fiscal.uuidFiscal.toUpperCase(),
+        );
+        if (repetidoUuid)
+          avisosPendientes.push(
+            `este comprobante fiscal ya fue registrado en el gasto ${repetidoUuid.id}`,
+          );
+      }
     }
 
     const adjuntos: Archivo[] = esTransporte
@@ -212,7 +238,9 @@ function Gastos() {
       moneda: f.moneda,
       tipoCambio: tc,
       montoMXN,
-      sinCFDI: f.sinCFDI,
+      sinCFDI: esSinComprobante,
+      tipoComprobante: f.tipoComprobante,
+      paisEmision: esExtranjero ? f.paisEmision : "",
       justificacion: f.justificacion.trim(),
       origenPais: esTransporte ? f.origenPais : "",
       origenCiudad: esTransporte ? f.origenCiudad.trim() : "",
@@ -256,7 +284,7 @@ function Gastos() {
 
     registrar(
       "Captura de gasto en borrador",
-      `${g.proveedor} por ${mxn(g.montoMXN)} (${g.rubro}) ${g.sinCFDI ? "sin CFDI" : "con CFDI"}.`,
+      `${g.proveedor} por ${mxn(g.montoMXN)} (${g.rubro}) · ${g.tipoComprobante}.`,
     );
     setError("");
     setAviso(
@@ -271,7 +299,8 @@ function Gastos() {
       subtotal: "",
       iva: "",
       justificacion: "",
-      sinCFDI: false,
+      tipoComprobante: "CFDI nacional" as TipoComprobante,
+      paisEmision: "",
       moneda: "MXN",
       tipoCambio: "1",
       origenCiudad: "",
@@ -621,17 +650,52 @@ function Gastos() {
           ) : null}
 
           <fieldset className="md:col-span-3 rounded-lg border-2 border-border-strong p-3">
-            <legend className="px-1 text-sm font-semibold">Comprobante fiscal</legend>
-            <label className="flex items-center gap-2 text-sm font-medium">
-              <input
-                type="checkbox"
-                className="h-5 w-5 rounded border-2 border-border-strong"
-                checked={f.sinCFDI}
-                onChange={(e) => setF({ ...f, sinCFDI: e.target.checked })}
-              />
-              Gasto Sin CFDI (tope {mxn(estado.topeSinComprobante)}, requiere justificación)
-            </label>
-            {f.sinCFDI ? (
+            <legend className="px-1 text-sm font-semibold">Tipo de comprobante</legend>
+            <div className="grid gap-3 md:grid-cols-2">
+              <Campo
+                etiqueta="Régimen de comprobación"
+                id="g-tipo-comp"
+                ayuda={
+                  esSinComprobante
+                    ? `Aplica el tope de ${mxn(estado.topeSinComprobante)} y requiere justificación y evidencia adjunta.`
+                    : esExtranjero
+                      ? "Sin RFC ni folio fiscal. Requiere país de emisión, descripción y evidencia de pago adjunta."
+                      : "Se esperan UUID fiscal, RFC emisor y RFC receptor. Sin tope de monto."
+                }
+              >
+                <Selector
+                  id="g-tipo-comp"
+                  value={f.tipoComprobante}
+                  onChange={(e) =>
+                    setF({ ...f, tipoComprobante: e.target.value as TipoComprobante })
+                  }
+                >
+                  {TIPOS_COMPROBANTE.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </Selector>
+              </Campo>
+              {esExtranjero ? (
+                <Campo etiqueta="País de emisión (obligatorio)" id="g-pais-emision">
+                  <Selector
+                    id="g-pais-emision"
+                    value={f.paisEmision}
+                    onChange={(e) => setF({ ...f, paisEmision: e.target.value })}
+                  >
+                    <option value="">Selecciona el país…</option>
+                    {PAISES.filter((p) => p.clave !== "MEX").map((p) => (
+                      <option key={p.clave} value={p.clave}>
+                        {p.nombre}
+                      </option>
+                    ))}
+                  </Selector>
+                </Campo>
+              ) : null}
+            </div>
+
+            {esSinComprobante ? (
               <div className="mt-3 grid gap-3 md:grid-cols-2">
                 <Campo etiqueta="Justificación del catálogo" id="g-just">
                   <Selector
@@ -654,31 +718,55 @@ function Gastos() {
                   />
                 </Campo>
               </div>
-            ) : (
+            ) : null}
+
+            {esExtranjero ? (
               <div className="mt-3">
                 <Campo
-                  etiqueta="Archivos (factura XML/PDF y evidencia)"
-                  id="g-files"
-                  ayuda="Puedes adjuntar varios archivos: XML, PDF, pases de abordar, fotos."
+                  etiqueta="Descripción del comprobante (obligatoria)"
+                  id="g-desc-ext"
+                  ayuda="Concepto amparado por la factura extranjera."
                 >
-                  <input
-                    id="g-files"
-                    type="file"
-                    multiple
-                    onChange={(e) => cargarArchivos(e.target.files)}
-                    className="w-full rounded-md border-2 border-border-strong bg-input px-3 py-2 text-sm"
+                  <AreaTexto
+                    id="g-desc-ext"
+                    value={f.justificacion}
+                    onChange={(e) => setF({ ...f, justificacion: e.target.value })}
+                    placeholder="Ej. Hospedaje de la delegación en San Antonio"
                   />
                 </Campo>
-                <ul className="mt-2 flex flex-wrap gap-2">
-                  {archivos.map((a) => (
-                    <li key={a.nombre}>
-                      <Etiqueta tono="marca">{a.nombre}</Etiqueta>
-                    </li>
-                  ))}
-                </ul>
               </div>
-            )}
+            ) : null}
+
+            <div className="mt-3">
+              <Campo
+                etiqueta={
+                  esSinComprobante
+                    ? "Evidencia adjunta (obligatoria)"
+                    : esExtranjero
+                      ? "Factura extranjera y evidencia de pago (obligatorias)"
+                      : "Archivos (factura XML/PDF y evidencia)"
+                }
+                id="g-files"
+                ayuda="Puedes adjuntar varios archivos: XML, PDF, pases de abordar, fotos."
+              >
+                <input
+                  id="g-files"
+                  type="file"
+                  multiple
+                  onChange={(e) => cargarArchivos(e.target.files)}
+                  className="w-full rounded-md border-2 border-border-strong bg-input px-3 py-2 text-sm"
+                />
+              </Campo>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {archivos.map((a) => (
+                  <li key={a.nombre}>
+                    <Etiqueta tono="marca">{a.nombre}</Etiqueta>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </fieldset>
+
 
           <fieldset className="md:col-span-3 rounded-lg border-2 border-border-strong p-3">
             <legend className="px-1 text-sm font-semibold">Participantes autorizados que usaron el servicio</legend>
@@ -715,7 +803,18 @@ function Gastos() {
         <TituloPanel sub="Los borradores solo los ves tú y no cuentan en presupuestos ni reportes hasta enviarlos a revisión.">
           Mis gastos
         </TituloPanel>
-        <Tabla cabeceras={["Fecha", "Proveedor", "Rubro", "Monto", "MXN", "CFDI", "Estatus", "Acciones"]}>
+        <Tabla
+          cabeceras={[
+            "Fecha",
+            "Proveedor",
+            "Rubro",
+            "Monto",
+            "MXN",
+            "Tipo de comprobante",
+            "Estatus",
+            "Acciones",
+          ]}
+        >
           {mios.map((g) => (
             <tr
               key={g.id}
@@ -733,7 +832,17 @@ function Gastos() {
                 {g.moneda !== "MXN" ? ` × ${g.tipoCambio}` : ""}
               </Celda>
               <Celda>{mxn(g.montoMXN)}</Celda>
-              <Celda>{g.sinCFDI ? `Sin CFDI — ${g.justificacion}` : "Con CFDI"}</Celda>
+              <Celda>
+                <Etiqueta tono="neutro">{g.tipoComprobante}</Etiqueta>
+                {g.tipoComprobante === "Sin comprobante fiscal" && g.justificacion ? (
+                  <p className="mt-1 text-xs">{g.justificacion}</p>
+                ) : null}
+                {g.tipoComprobante === "Comprobante extranjero" && g.paisEmision ? (
+                  <p className="mt-1 text-xs">
+                    País: {PAISES.find((p) => p.clave === g.paisEmision)?.nombre ?? g.paisEmision}
+                  </p>
+                ) : null}
+              </Celda>
               <Celda>
                 <Etiqueta tono={tonoEstatus(g.estatus)}>{g.estatus}</Etiqueta>
                 {g.observaciones ? (
@@ -814,6 +923,12 @@ function Gastos() {
                         )}
                       </li>
                     ) : null}
+                    <li className="text-muted-foreground">
+                      Tipo de comprobante: <strong>{g.tipoComprobante}</strong>
+                      {g.paisEmision
+                        ? ` · País de emisión: ${PAISES.find((p) => p.clave === g.paisEmision)?.nombre ?? g.paisEmision}`
+                        : ""}
+                    </li>
                     <li className="text-muted-foreground">
                       Subtotal: {g.subtotal !== undefined ? mxn(g.subtotal) : "—"} · IVA:{" "}
                       {g.iva !== undefined ? mxn(g.iva) : "—"} · Total que se comprueba:{" "}

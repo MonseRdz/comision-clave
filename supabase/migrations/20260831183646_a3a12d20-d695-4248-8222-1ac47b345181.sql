@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.sincronizar_sin_cfdi() FROM PUBLIC, anon, authenticated;
