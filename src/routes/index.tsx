@@ -438,6 +438,45 @@ function Tablero() {
         </Panel>
 
         <Panel>
+          <TituloPanel icono="i-bench" sub="Gastos aprobados sin comprobante fiscal.">
+            Comprobación sin factura
+          </TituloPanel>
+          {sinFactura.monto > 0 ? (
+            <div>
+              <p className="cifra text-2xl font-black" style={{ color: "var(--dato)" }}>
+                {mxn(sinFactura.monto)}
+              </p>
+              <p className="text-xs text-ink-2">{sinFactura.pct}% de lo comprobado y aprobado</p>
+              <p className="text-[11px] text-ink-3">
+                {mxn(sinFactura.enDictamen)} adicionales en dictamen
+              </p>
+              <ul className="mt-3 grid gap-2">
+                {sinFacturaEventos.map((ev) => (
+                  <li
+                    key={ev.id}
+                    className="flex flex-wrap items-center gap-2 rounded-[12px] border border-hair bg-card px-3 py-2"
+                  >
+                    <span className="min-w-40 flex-1 text-sm font-semibold">{ev.nombre}</span>
+                    <span className="cifra text-sm font-bold">{mxn(ev.monto)}</span>
+                    <span
+                      className="rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
+                      style={{ background: "var(--dato)" }}
+                    >
+                      {ev.pct}%
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No hay gastos aprobados sin comprobante fiscal.
+            </p>
+          )}
+        </Panel>
+
+
+        <Panel>
           <TituloPanel sub="Facultades de aprobación delegadas por el Contralor.">
             Delegaciones vigentes
           </TituloPanel>
