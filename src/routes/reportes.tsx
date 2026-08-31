@@ -102,6 +102,7 @@ function Reportes() {
               cabeceras={[
                 "Rubro",
                 "Comprobante",
+                "Tipo de comprobante",
                 "Monto",
                 "Participantes",
                 "Evidencia",
@@ -114,6 +115,9 @@ function Reportes() {
                 <tr key={g.id}>
                   <Celda>{g.rubro}</Celda>
                   <Celda>{g.proveedor}</Celda>
+                  <Celda>
+                    <Etiqueta tono="neutro">{g.tipoComprobante}</Etiqueta>
+                  </Celda>
                   <Celda>{mxn(g.montoMXN)}</Celda>
                   <Celda>
                     {g.participantesIds
@@ -121,8 +125,8 @@ function Reportes() {
                       .join(", ") || "—"}
                   </Celda>
                   <Celda>
-                    {g.sinCFDI
-                      ? `Sin CFDI — ${g.justificacion}`
+                    {g.tipoComprobante === "Sin comprobante fiscal"
+                      ? `${g.justificacion} · ${g.archivos.map((a) => a.nombre).join(", ") || "sin adjuntos"}`
                       : g.archivos.map((a) => a.nombre).join(", ") || "—"}
                   </Celda>
                   <Celda>
