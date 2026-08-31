@@ -86,6 +86,9 @@ function Gastos() {
 
   const evento = estado.eventos.find((e) => e.id === f.eventoId);
   const esTransporte = f.rubro === "Transporte";
+  const esCFDI = f.tipoComprobante === "CFDI nacional";
+  const esExtranjero = f.tipoComprobante === "Comprobante extranjero";
+  const esSinComprobante = f.tipoComprobante === "Sin comprobante fiscal";
   const nominales = evento?.participantes ?? [];
   const faltanPases = esTransporte ? nominales.filter((p) => !pases[p.id]) : [];
   const monto = Number(f.monto) || 0;
