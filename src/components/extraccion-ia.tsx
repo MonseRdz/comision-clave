@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useStore, hoyISO, nuevoId } from "@/lib/store";
-import { leerCFDI, type Propuesta } from "@/lib/cfdi";
+import { leerCFDI, FISCAL_VACIO, type Propuesta, type DatosFiscales } from "@/lib/cfdi";
 import { extraerComprobante, SERVICIO_IA } from "@/lib/extraccion.functions";
 import type { Archivo, IaExtraccion } from "@/lib/types";
 import { buscarDuplicado, huellaArchivo, mensajeDuplicado } from "@/lib/duplicados";
@@ -15,6 +15,7 @@ export type ResultadoConfirmado = {
   campos: { proveedor: string; monto: string; moneda: string; rubro: string };
   archivo: Archivo;
   meta: IaExtraccion;
+  fiscal: DatosFiscales;
 };
 
 const tono = (c: string) => (c === "alta" ? "ok" : c === "media" ? "alerta" : "neutro");
@@ -103,6 +104,7 @@ export function ExtraccionIA({ onConfirmar }: { onConfirmar: (r: ResultadoConfir
           confianza: r.confianza as Propuesta["confianza"],
           metodo: esFoto ? "Foto (corrección + OCR + IA)" : "PDF (OCR + IA)",
           modelo: r.modelo,
+          fiscal: FISCAL_VACIO,
         };
       }
       const rubro = estado.rubros.find((x) => x.toLowerCase() === p.campos.rubro.toLowerCase()) ?? "";
@@ -144,6 +146,7 @@ export function ExtraccionIA({ onConfirmar }: { onConfirmar: (r: ResultadoConfir
       },
       archivo,
       meta,
+      fiscal: propuesta.fiscal,
     });
     registrar(
       "Confirmación de extracción IA",
@@ -199,6 +202,13 @@ export function ExtraccionIA({ onConfirmar }: { onConfirmar: (r: ResultadoConfir
               <p className="text-sm">
                 Método: <strong>{propuesta.metodo}</strong> · Modelo: <strong>{propuesta.modelo}</strong>
               </p>
+              {propuesta.fiscal.subtotal || propuesta.fiscal.iva ? (
+                <p className="text-sm">
+                  Subtotal: <strong>{propuesta.fiscal.subtotal || "—"}</strong> · IVA:{" "}
+                  <strong>{propuesta.fiscal.iva || "—"}</strong> · Total (importe que se comprueba):{" "}
+                  <strong>{propuesta.campos.monto || "—"}</strong>
+                </p>
+              ) : null}
               <div className="grid gap-3 md:grid-cols-2">
                 <Campo etiqueta="Fecha del comprobante (referencia)" id="ia-fecha">
                   <Entrada
@@ -223,7 +233,7 @@ export function ExtraccionIA({ onConfirmar }: { onConfirmar: (r: ResultadoConfir
                     </Etiqueta>
                   </p>
                 </Campo>
-                <Campo etiqueta="Monto (moneda original)" id="ia-monto">
+                <Campo etiqueta="Total del comprobante (moneda original)" id="ia-monto">
                   <Entrada
                     id="ia-monto"
                     type="number"
