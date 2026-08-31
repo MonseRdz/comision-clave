@@ -522,6 +522,7 @@ function Tablero() {
             const rojo = comp > asig || gastosEv.some((g) => g.estatus === "Rechazado");
             const tono = rojo ? "error" : pend.length ? "alerta" : "ok";
             const texto = rojo ? "Rojo" : pend.length ? "Amarillo" : "Verde";
+            const pctSinFactura = resumenSinFactura(gastosEv).pct;
             return (
               <tr key={ev.id}>
                 <Celda>{ev.nombre}</Celda>
@@ -530,6 +531,11 @@ function Tablero() {
                 <Celda>{mxn(comp)}</Celda>
                 <Celda>{mxn(resta(asig, comp))}</Celda>
                 <Celda>{asig ? Math.round((comp / asig) * 100) : 0}%</Celda>
+                <Celda>
+                  <span style={{ color: "var(--dato)" }} className="font-semibold">
+                    {pctSinFactura}%
+                  </span>
+                </Celda>
                 <Celda>
                   <Etiqueta tono={tono}>
                     {texto} · {pend.length} pendientes
