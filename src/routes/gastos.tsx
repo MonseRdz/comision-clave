@@ -846,7 +846,7 @@ function Gastos() {
               <Celda>
                 <Etiqueta tono={tonoEstatus(g.estatus)}>{g.estatus}</Etiqueta>
                 {g.estatus === "Devuelto para corrección" && g.observaciones ? (
-                  <p className="mt-1 text-xs font-semibold text-amber-600">
+                  <p className="mt-1 text-xs font-semibold text-warning">
                     Motivo de devolución: {g.observaciones}
                   </p>
                 ) : null}
