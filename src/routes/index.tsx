@@ -39,12 +39,6 @@ export const Route = createFileRoute("/")({
   component: Tablero,
 });
 
-const EN_DICTAMEN: Gasto["estatus"][] = [
-  "Registrado",
-  "Validado por Revisor",
-  "Devuelto para corrección",
-];
-
 function Indicador({ titulo, valor, nota }: { titulo: string; valor: string; nota?: string }) {
   return (
     <div className="rounded-[12px] border border-hair bg-card p-4 shadow-[0_1px_2px_rgba(16,24,32,.045)]">
@@ -80,11 +74,9 @@ function Tablero() {
 
   // Composición del presupuesto ejercido (sin borradores).
   const noBorrador = estado.gastos.filter((g) => !esBorrador(g));
-  const aprobadoTotal = noBorrador
-    .filter((g) => g.estatus === "Aprobado")
-    .reduce((s, g) => suma(s, g.montoMXN), 0);
+  const aprobadoTotal = comprobado;
   const dictamenTotal = noBorrador
-    .filter((g) => EN_DICTAMEN.includes(g.estatus))
+    .filter(cuentaEnDictamen)
     .reduce((s, g) => suma(s, g.montoMXN), 0);
   const sinComprobar = Math.max(0, resta(resta(asignado, aprobadoTotal), dictamenTotal));
 
@@ -198,13 +190,25 @@ function Tablero() {
         </TituloPanel>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Indicador titulo="Presupuesto total asignado" valor={mxn(asignado)} />
-          <Indicador titulo="Comprobado" valor={mxn(comprobado)} nota={`${pct}% del total asignado`} />
+          <Indicador
+            titulo="Comprobado y aprobado"
+            valor={mxn(comprobado)}
+            nota={`${pct}% del total asignado`}
+          />
           <Indicador
             titulo="Pendiente de comprobar"
             valor={mxn(disponible)}
-            nota="Presupuesto sin respaldo documental"
+            nota={
+              dictamenTotal > 0
+                ? `Incluye ${mxn(dictamenTotal)} en dictamen`
+                : "Presupuesto sin respaldo documental"
+            }
           />
-          <Indicador titulo="Monto en riesgo (+7 días)" valor={mxn(enRiesgo)} nota={`${mas7.length} comprobaciones`} />
+          <Indicador
+            titulo="Monto en riesgo (+7 días)"
+            valor={mxn(enRiesgo)}
+            nota={`${mas7.length} ${mas7.length === 1 ? "comprobación" : "comprobaciones"}`}
+          />
         </div>
 
         <div className="mt-6">
@@ -292,9 +296,7 @@ function Tablero() {
                     .reduce((s, p) => suma(s, p.monto), 0);
                   const gs = estado.gastos.filter((g) => g.eventoId === ev.id && !esBorrador(g));
                   const apro = gs.filter((g) => g.estatus === "Aprobado").reduce((s, g) => suma(s, g.montoMXN), 0);
-                  const dict = gs
-                    .filter((g) => EN_DICTAMEN.includes(g.estatus))
-                    .reduce((s, g) => suma(s, g.montoMXN), 0);
+                  const dict = gs.filter(cuentaEnDictamen).reduce((s, g) => suma(s, g.montoMXN), 0);
                   const comp = gs.filter(cuentaComprobado).reduce((s, g) => suma(s, g.montoMXN), 0);
                   const rest = Math.max(0, resta(resta(asig, apro), dict));
                   return (
@@ -463,7 +465,7 @@ function Tablero() {
                 <Celda>{ev.clave}</Celda>
                 <Celda>{mxn(asig)}</Celda>
                 <Celda>{mxn(comp)}</Celda>
-                <Celda>{mxn(asig - comp)}</Celda>
+                <Celda>{mxn(resta(asig, comp))}</Celda>
                 <Celda>{asig ? Math.round((comp / asig) * 100) : 0}%</Celda>
                 <Celda>
                   <Etiqueta tono={tono}>
