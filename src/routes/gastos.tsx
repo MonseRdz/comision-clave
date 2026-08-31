@@ -650,17 +650,52 @@ function Gastos() {
           ) : null}
 
           <fieldset className="md:col-span-3 rounded-lg border-2 border-border-strong p-3">
-            <legend className="px-1 text-sm font-semibold">Comprobante fiscal</legend>
-            <label className="flex items-center gap-2 text-sm font-medium">
-              <input
-                type="checkbox"
-                className="h-5 w-5 rounded border-2 border-border-strong"
-                checked={f.sinCFDI}
-                onChange={(e) => setF({ ...f, sinCFDI: e.target.checked })}
-              />
-              Gasto Sin CFDI (tope {mxn(estado.topeSinComprobante)}, requiere justificación)
-            </label>
-            {f.sinCFDI ? (
+            <legend className="px-1 text-sm font-semibold">Tipo de comprobante</legend>
+            <div className="grid gap-3 md:grid-cols-2">
+              <Campo
+                etiqueta="Régimen de comprobación"
+                id="g-tipo-comp"
+                ayuda={
+                  esSinComprobante
+                    ? `Aplica el tope de ${mxn(estado.topeSinComprobante)} y requiere justificación y evidencia adjunta.`
+                    : esExtranjero
+                      ? "Sin RFC ni folio fiscal. Requiere país de emisión, descripción y evidencia de pago adjunta."
+                      : "Se esperan UUID fiscal, RFC emisor y RFC receptor. Sin tope de monto."
+                }
+              >
+                <Selector
+                  id="g-tipo-comp"
+                  value={f.tipoComprobante}
+                  onChange={(e) =>
+                    setF({ ...f, tipoComprobante: e.target.value as TipoComprobante })
+                  }
+                >
+                  {TIPOS_COMPROBANTE.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </Selector>
+              </Campo>
+              {esExtranjero ? (
+                <Campo etiqueta="País de emisión (obligatorio)" id="g-pais-emision">
+                  <Selector
+                    id="g-pais-emision"
+                    value={f.paisEmision}
+                    onChange={(e) => setF({ ...f, paisEmision: e.target.value })}
+                  >
+                    <option value="">Selecciona el país…</option>
+                    {PAISES.filter((p) => p.clave !== "MEX").map((p) => (
+                      <option key={p.clave} value={p.clave}>
+                        {p.nombre}
+                      </option>
+                    ))}
+                  </Selector>
+                </Campo>
+              ) : null}
+            </div>
+
+            {esSinComprobante ? (
               <div className="mt-3 grid gap-3 md:grid-cols-2">
                 <Campo etiqueta="Justificación del catálogo" id="g-just">
                   <Selector
@@ -683,31 +718,55 @@ function Gastos() {
                   />
                 </Campo>
               </div>
-            ) : (
+            ) : null}
+
+            {esExtranjero ? (
               <div className="mt-3">
                 <Campo
-                  etiqueta="Archivos (factura XML/PDF y evidencia)"
-                  id="g-files"
-                  ayuda="Puedes adjuntar varios archivos: XML, PDF, pases de abordar, fotos."
+                  etiqueta="Descripción del comprobante (obligatoria)"
+                  id="g-desc-ext"
+                  ayuda="Concepto amparado por la factura extranjera."
                 >
-                  <input
-                    id="g-files"
-                    type="file"
-                    multiple
-                    onChange={(e) => cargarArchivos(e.target.files)}
-                    className="w-full rounded-md border-2 border-border-strong bg-input px-3 py-2 text-sm"
+                  <AreaTexto
+                    id="g-desc-ext"
+                    value={f.justificacion}
+                    onChange={(e) => setF({ ...f, justificacion: e.target.value })}
+                    placeholder="Ej. Hospedaje de la delegación en San Antonio"
                   />
                 </Campo>
-                <ul className="mt-2 flex flex-wrap gap-2">
-                  {archivos.map((a) => (
-                    <li key={a.nombre}>
-                      <Etiqueta tono="marca">{a.nombre}</Etiqueta>
-                    </li>
-                  ))}
-                </ul>
               </div>
-            )}
+            ) : null}
+
+            <div className="mt-3">
+              <Campo
+                etiqueta={
+                  esSinComprobante
+                    ? "Evidencia adjunta (obligatoria)"
+                    : esExtranjero
+                      ? "Factura extranjera y evidencia de pago (obligatorias)"
+                      : "Archivos (factura XML/PDF y evidencia)"
+                }
+                id="g-files"
+                ayuda="Puedes adjuntar varios archivos: XML, PDF, pases de abordar, fotos."
+              >
+                <input
+                  id="g-files"
+                  type="file"
+                  multiple
+                  onChange={(e) => cargarArchivos(e.target.files)}
+                  className="w-full rounded-md border-2 border-border-strong bg-input px-3 py-2 text-sm"
+                />
+              </Campo>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {archivos.map((a) => (
+                  <li key={a.nombre}>
+                    <Etiqueta tono="marca">{a.nombre}</Etiqueta>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </fieldset>
+
 
           <fieldset className="md:col-span-3 rounded-lg border-2 border-border-strong p-3">
             <legend className="px-1 text-sm font-semibold">Participantes autorizados que usaron el servicio</legend>
