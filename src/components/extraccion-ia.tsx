@@ -30,6 +30,8 @@ export function ExtraccionIA({ onConfirmar }: { onConfirmar: (r: ResultadoConfir
   const [propuesta, setPropuesta] = useState<Propuesta | null>(null);
   const [archivo, setArchivo] = useState<Archivo | null>(null);
   const [editado, setEditado] = useState({ fecha: "", proveedor: "", monto: "", moneda: "MXN", rubro: "" });
+  const [editadoFiscal, setEditadoFiscal] = useState<DatosFiscales>(FISCAL_VACIO);
+  const [confFiscal, setConfFiscal] = useState<Record<string, string>>({});
 
   const acepto = estado.aceptaciones.some(
     (a) => a.usuarioId === usuarioActual.id && a.version === VERSION_CONSENTIMIENTO,
@@ -80,6 +82,7 @@ export function ExtraccionIA({ onConfirmar }: { onConfirmar: (r: ResultadoConfir
     setCargando(true);
     try {
       let p: Propuesta;
+      let confianzaFiscal: Record<string, string> = {};
       if (esXml) {
         const xml = await file.text();
         p = leerCFDI(xml, estado.rubros);
@@ -104,9 +107,22 @@ export function ExtraccionIA({ onConfirmar }: { onConfirmar: (r: ResultadoConfir
           confianza: r.confianza as Propuesta["confianza"],
           metodo: esFoto ? "Foto (corrección + OCR + IA)" : "PDF (OCR + IA)",
           modelo: r.modelo,
-          fiscal: FISCAL_VACIO,
+          fiscal: { ...FISCAL_VACIO, ...r.fiscal },
+        };
+        confianzaFiscal = r.confianza as Record<string, string>;
+      }
+      if (esXml) {
+        const f = p.fiscal;
+        confianzaFiscal = {
+          subtotal: f.subtotal ? "alta" : "baja",
+          iva: f.iva ? "alta" : "baja",
+          uuidFiscal: f.uuidFiscal ? "alta" : "baja",
+          rfcEmisor: f.rfcEmisor ? "alta" : "baja",
+          rfcReceptor: f.rfcReceptor ? "alta" : "baja",
         };
       }
+      setEditadoFiscal(p.fiscal);
+      setConfFiscal(confianzaFiscal);
       const rubro = estado.rubros.find((x) => x.toLowerCase() === p.campos.rubro.toLowerCase()) ?? "";
       setPropuesta(p);
       setEditado({
@@ -134,8 +150,8 @@ export function ExtraccionIA({ onConfirmar }: { onConfirmar: (r: ResultadoConfir
       archivo: archivo.nombre,
       hash: await huellaArchivo(archivo),
       confianza: propuesta.confianza,
-      propuesto: { ...propuesta.campos },
-      confirmado: { ...editado },
+      propuesto: { ...propuesta.campos, ...propuesta.fiscal },
+      confirmado: { ...editado, ...editadoFiscal },
     };
     onConfirmar({
       campos: {
@@ -146,7 +162,7 @@ export function ExtraccionIA({ onConfirmar }: { onConfirmar: (r: ResultadoConfir
       },
       archivo,
       meta,
-      fiscal: propuesta.fiscal,
+      fiscal: editadoFiscal,
     });
     registrar(
       "Confirmación de extracción IA",
@@ -154,6 +170,8 @@ export function ExtraccionIA({ onConfirmar }: { onConfirmar: (r: ResultadoConfir
     );
     setPropuesta(null);
     setArchivo(null);
+    setEditadoFiscal(FISCAL_VACIO);
+    setConfFiscal({});
     setMensaje("Datos confirmados y copiados al formulario. Revisa evento, participantes y justificación.");
   }
 
@@ -280,6 +298,29 @@ export function ExtraccionIA({ onConfirmar }: { onConfirmar: (r: ResultadoConfir
                   </p>
                 </Campo>
               </div>
+              <fieldset className="grid gap-3 rounded-lg border-2 border-border-strong p-3 md:grid-cols-2">
+                <legend className="px-1 text-sm font-semibold">Datos fiscales de la factura</legend>
+                {(
+                  [
+                    ["subtotal", "Subtotal (antes de impuestos)"],
+                    ["iva", "IVA (impuestos trasladados)"],
+                    ["uuidFiscal", "UUID fiscal (folio fiscal)"],
+                    ["rfcEmisor", "RFC emisor"],
+                    ["rfcReceptor", "RFC receptor"],
+                  ] as [keyof DatosFiscales, string][]
+                ).map(([k, etiqueta]) => (
+                  <Campo key={k} etiqueta={etiqueta} id={`ia-${k}`}>
+                    <Entrada
+                      id={`ia-${k}`}
+                      value={editadoFiscal[k]}
+                      onChange={(e) => setEditadoFiscal({ ...editadoFiscal, [k]: e.target.value })}
+                    />
+                    <p className="mt-1">
+                      <Etiqueta tono={tono(confFiscal[k] ?? "baja")}>{texto(confFiscal[k] ?? "baja")}</Etiqueta>
+                    </p>
+                  </Campo>
+                ))}
+              </fieldset>
               <div className="flex flex-wrap gap-2">
                 <Boton type="button" onClick={() => void confirmar()}>
                   Confirmar datos
@@ -290,6 +331,8 @@ export function ExtraccionIA({ onConfirmar }: { onConfirmar: (r: ResultadoConfir
                   onClick={() => {
                     setPropuesta(null);
                     setArchivo(null);
+                    setEditadoFiscal(FISCAL_VACIO);
+                    setConfFiscal({});
                     setMensaje("Propuesta descartada. Captura los datos manualmente.");
                   }}
                 >
