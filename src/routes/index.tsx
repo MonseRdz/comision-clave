@@ -502,7 +502,16 @@ function Tablero() {
           Semáforo de auditoría por evento
         </TituloPanel>
         <Tabla
-          cabeceras={["Evento", "Clave", "Asignado", "Comprobado", "Pend. de comprobar", "% comprobado", "Semáforo"]}
+          cabeceras={[
+            "Evento",
+            "Clave",
+            "Asignado",
+            "Comprobado",
+            "Pend. de comprobar",
+            "% comprobado",
+            "Sin factura",
+            "Semáforo",
+          ]}
           vacio="Aún no hay eventos registrados."
         >
           {estado.eventos.map((ev) => {
