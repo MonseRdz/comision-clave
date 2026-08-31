@@ -33,10 +33,13 @@ function Reportes() {
   return (
     <div className="grid gap-4 pt-4">
       <Panel>
-        <TituloPanel sub="Avance de comprobación por evento, comisionados pendientes y días de atraso.">
+        <TituloPanel icono="i-court" sub="Avance de comprobación por evento, comisionados pendientes y días de atraso.">
           Reporte de avance
         </TituloPanel>
-        <Tabla cabeceras={["Evento", "% comprobado", "Comisionados pendientes", "Días de atraso máximo"]}>
+        <Tabla
+          cabeceras={["Evento", "% comprobado", "Pend. de comprobar", "Comisionados pendientes", "Días de atraso máximo"]}
+          vacio="Aún no hay eventos registrados."
+        >
           {estado.eventos.map((ev) => {
             const asig = estado.presupuestos.filter((p) => p.eventoId === ev.id).reduce((s, p) => suma(s, p.monto), 0);
             const gs = estado.gastos.filter((g) => g.eventoId === ev.id && !esBorrador(g));
@@ -55,6 +58,7 @@ function Reportes() {
                   </p>
                 </Celda>
                 <Celda>{asig ? Math.round((comp / asig) * 100) : 0}%</Celda>
+                <Celda>{mxn(asig - comp)}</Celda>
                 <Celda>{nombres.join(", ") || "Ninguno"}</Celda>
                 <Celda>
                   <Etiqueta tono={atraso > 7 ? "error" : atraso >= 3 ? "alerta" : "ok"}>{atraso} días</Etiqueta>
@@ -66,7 +70,7 @@ function Reportes() {
       </Panel>
 
       <Panel>
-        <TituloPanel sub="Comprobantes por rubro, participantes asociados, estatus final y dictaminador.">
+        <TituloPanel icono="i-jersey" sub="Comprobantes por rubro, participantes asociados, estatus final y dictaminador.">
           Expediente de Evidencia Nominal
         </TituloPanel>
         <div className="flex flex-wrap items-end gap-3">

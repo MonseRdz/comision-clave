@@ -3,6 +3,7 @@ import { useStore } from "@/lib/store";
 import { Boton, Etiqueta, Aviso } from "@/components/glass";
 import type { Rol } from "@/lib/types";
 import logoAsset from "@/assets/Ademeba_Logo.png.asset.json";
+import { SpriteIconos, Ico } from "@/components/iconos";
 
 type Enlace = { a: string; texto: string; roles: Rol[] };
 
@@ -36,9 +37,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen">
+      <SpriteIconos />
       <a
         href="#contenido"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:border-2 focus:border-border-strong focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:border focus:border-hair focus:bg-accent focus:px-3 focus:py-2 focus:text-primary-foreground"
       >
         Saltar al contenido
       </a>
@@ -48,10 +50,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <img
               src={logoAsset.url}
               alt="ADEMEBA"
-              className="h-10 w-10 rounded-lg border-2 border-border-strong bg-white object-contain p-0.5"
+              className="h-10 w-10 rounded-lg border border-hair bg-white object-contain p-0.5"
             />
             <div>
-              <p className="text-base font-black leading-tight">Comprobación de Gastos</p>
+              <p className="titulo-tarjeta text-base leading-tight">Comprobación de Gastos</p>
               <p className="text-xs text-muted-foreground">ADEMEBA · Justificación de recursos públicos</p>
             </div>
           </div>
@@ -83,10 +85,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   key={e.a}
                   to={e.a}
                   aria-current={activo ? "page" : undefined}
-                  className={`rounded-md border-2 border-border-strong px-3 py-1.5 text-sm font-semibold ${
-                    activo ? "bg-primary text-primary-foreground" : "bg-glass-strong text-foreground"
+                  className={`titulo-tarjeta inline-flex items-center gap-1.5 rounded-[12px] px-3 py-1.5 text-xs ${
+                    activo
+                      ? "border border-transparent bg-accent text-white"
+                      : "border border-hair bg-white text-ink shadow-[0_1px_2px_rgba(16,24,32,.045)]"
                   }`}
                 >
+                  {e.a === "/" ? (
+                    <Ico nombre="i-score" className={`ico ${activo ? "text-white" : ""}`} />
+                  ) : null}
                   {e.texto}
                 </Link>
               );
