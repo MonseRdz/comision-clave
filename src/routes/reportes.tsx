@@ -125,9 +125,29 @@ function Reportes() {
                       .join(", ") || "—"}
                   </Celda>
                   <Celda>
-                    {g.tipoComprobante === "Sin comprobante fiscal"
-                      ? `${g.justificacion} · ${g.archivos.map((a) => a.nombre).join(", ") || "sin adjuntos"}`
-                      : g.archivos.map((a) => a.nombre).join(", ") || "—"}
+                    {g.tipoComprobante === "Sin comprobante fiscal" && g.justificacion ? (
+                      <p className="mb-1 text-xs text-muted-foreground">{g.justificacion}</p>
+                    ) : null}
+                    {g.archivos.length ? (
+                      <ul className="grid gap-1">
+                        {g.archivos.map((a, i) => (
+                          <li key={`${a.nombre}-${i}`} className="flex items-center gap-2">
+                            <Etiqueta tono="neutro">{tipoArchivo(a.nombre, a.tipo)}</Etiqueta>
+                            <a
+                              href={a.dataUrl}
+                              download={a.nombre}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-sm underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                            >
+                              {a.nombre}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      "—"
+                    )}
                   </Celda>
                   <Celda>
                     <Etiqueta
