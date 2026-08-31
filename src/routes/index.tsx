@@ -1,5 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useStore, mxn, diasDesde, cuentaComprobado, estaPendiente, esBorrador } from "@/lib/store";
+import {
+  useStore,
+  mxn,
+  diasDesde,
+  cuentaComprobado,
+  cuentaEnDictamen,
+  estaPendiente,
+  esBorrador,
+} from "@/lib/store";
 import { Panel, TituloPanel, Etiqueta, Aviso, Tabla, Celda } from "@/components/glass";
 import { resta, suma } from "@/lib/dinero";
 import {
