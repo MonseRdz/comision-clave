@@ -83,16 +83,19 @@ export type Database = {
       configuracion: {
         Row: {
           id: number
+          rfc_ademeba: string
           tope_sin_comprobante: number
           version_reglas: string
         }
         Insert: {
           id?: number
+          rfc_ademeba?: string
           tope_sin_comprobante?: number
           version_reglas?: string
         }
         Update: {
           id?: number
+          rfc_ademeba?: string
           tope_sin_comprobante?: number
           version_reglas?: string
         }
@@ -172,6 +175,7 @@ export type Database = {
           folio_delegacion: string | null
           ia_extraccion: Json
           id: string
+          iva: number | null
           justificacion: string
           moneda: string
           monto: number
@@ -183,9 +187,13 @@ export type Database = {
           participantes_ids: string[]
           proveedor: string
           revisor_id: string | null
+          rfc_emisor: string | null
+          rfc_receptor: string | null
           rubro: string
           sin_cfdi: boolean
+          subtotal: number | null
           tipo_cambio: number
+          uuid_fiscal: string | null
         }
         Insert: {
           archivos?: Json
@@ -200,6 +208,7 @@ export type Database = {
           folio_delegacion?: string | null
           ia_extraccion?: Json
           id: string
+          iva?: number | null
           justificacion?: string
           moneda?: string
           monto?: number
@@ -211,9 +220,13 @@ export type Database = {
           participantes_ids?: string[]
           proveedor?: string
           revisor_id?: string | null
+          rfc_emisor?: string | null
+          rfc_receptor?: string | null
           rubro: string
           sin_cfdi?: boolean
+          subtotal?: number | null
           tipo_cambio?: number
+          uuid_fiscal?: string | null
         }
         Update: {
           archivos?: Json
@@ -228,6 +241,7 @@ export type Database = {
           folio_delegacion?: string | null
           ia_extraccion?: Json
           id?: string
+          iva?: number | null
           justificacion?: string
           moneda?: string
           monto?: number
@@ -239,9 +253,13 @@ export type Database = {
           participantes_ids?: string[]
           proveedor?: string
           revisor_id?: string | null
+          rfc_emisor?: string | null
+          rfc_receptor?: string | null
           rubro?: string
           sin_cfdi?: boolean
+          subtotal?: number | null
           tipo_cambio?: number
+          uuid_fiscal?: string | null
         }
         Relationships: [
           {
