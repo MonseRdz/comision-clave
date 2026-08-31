@@ -81,7 +81,7 @@ function Presupuestos() {
     <div className="grid gap-4 pt-4">
       {aviso ? <Aviso>{aviso}</Aviso> : null}
       <Panel>
-        <TituloPanel sub="Monto por evento y rubro, con comisionado responsable.">
+        <TituloPanel icono="i-hoop" sub="Monto por evento y rubro, con comisionado responsable.">
           Asignar presupuesto
         </TituloPanel>
         <form onSubmit={asignar} className="grid gap-3 md:grid-cols-4 md:items-end">
@@ -131,8 +131,11 @@ function Presupuestos() {
       </Panel>
 
       <Panel>
-        <TituloPanel>Presupuestos asignados</TituloPanel>
-        <Tabla cabeceras={["Evento", "Rubro", "Asignado", "Comprobado", "Disponible", "Responsable"]}>
+        <TituloPanel icono="i-hoop">Presupuestos asignados</TituloPanel>
+        <Tabla
+          cabeceras={["Evento", "Rubro", "Asignado", "Comprobado", "Pend. de comprobar", "Responsable"]}
+          vacio="Aún no hay presupuestos asignados."
+        >
           {estado.presupuestos.map((p) => {
             const comprobado = estado.gastos
               .filter((g) => g.eventoId === p.eventoId && g.rubro === p.rubro && cuentaComprobado(g))
