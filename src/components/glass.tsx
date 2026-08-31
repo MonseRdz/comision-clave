@@ -13,10 +13,21 @@ export function Panel({
   return <As className={cn("glass-panel p-5", className)}>{children}</As>;
 }
 
-export function TituloPanel({ children, sub }: { children: ReactNode; sub?: string }) {
+export function TituloPanel({
+  children,
+  sub,
+  icono,
+}: {
+  children: ReactNode;
+  sub?: string;
+  icono?: NombreIcono;
+}) {
   return (
     <div className="mb-4">
-      <h2 className="text-lg font-bold tracking-tight">{children}</h2>
+      <h2 className="titulo-tarjeta flex items-center gap-2 text-base">
+        {icono ? <Ico nombre={icono} /> : null}
+        {children}
+      </h2>
       {sub ? <p className="mt-1 text-sm text-muted-foreground">{sub}</p> : null}
     </div>
   );
