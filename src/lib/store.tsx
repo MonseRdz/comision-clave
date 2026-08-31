@@ -239,8 +239,17 @@ export const esInmutable = (g: Gasto) => g.estatus === "Aprobado" || g.estatus =
 /** Un borrador aún no es un gasto ejercido: no cuenta en presupuestos, tablero ni reportes. */
 export const esBorrador = (g: Gasto) => g.estatus === "Borrador";
 
-/** Gastos que suman al comprobado (excluye borradores y rechazados). */
-export const cuentaComprobado = (g: Gasto) => g.estatus !== "Borrador" && g.estatus !== "Rechazado";
+/** Criterio estricto: solo lo dictaminado y aprobado cuenta como comprobado. */
+export const cuentaComprobado = (g: Gasto) => g.estatus === "Aprobado";
+
+/** Gastos presentados y en proceso de dictamen (no comprobados todavía). */
+export const cuentaEnDictamen = (g: Gasto) =>
+  g.estatus === "Registrado" ||
+  g.estatus === "Validado por Revisor" ||
+  g.estatus === "Devuelto para corrección";
+
+/** Gastos aún en poder del comisionado. */
+export const cuentaBorrador = (g: Gasto) => g.estatus === "Borrador";
 
 /** Gastos presentados y aún sin dictamen final. */
 export const estaPendiente = (g: Gasto) =>
