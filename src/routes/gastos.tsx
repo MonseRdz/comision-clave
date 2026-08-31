@@ -316,17 +316,17 @@ function Gastos() {
 
 
   function enviarARevision(g: Gasto) {
-    if (g.estatus !== "Borrador") return;
+    if (g.estatus !== "Borrador" && g.estatus !== "Devuelto para corrección") return;
     setEstado((e) => ({
       ...e,
       gastos: e.gastos.map((x) => (x.id === g.id ? { ...x, estatus: "Registrado" as const } : x)),
     }));
     registrar(
-      "Envío a revisión",
-      `Gasto de ${g.proveedor} por ${mxn(g.montoMXN)} (${g.rubro}) enviado a revisión.`,
+      g.estatus === "Borrador" ? "Envío a revisión" : "Reenvío a revisión",
+      `Gasto de ${g.proveedor} por ${mxn(g.montoMXN)} (${g.rubro}) ${g.estatus === "Borrador" ? "enviado" : "reenviado"} a revisión.`,
     );
     setError("");
-    setAviso(`Gasto de "${g.proveedor}" enviado a revisión.`);
+    setAviso(`Gasto de "${g.proveedor}" ${g.estatus === "Borrador" ? "enviado" : "reenviado"} a revisión.`);
   }
 
   function guardarEdicion(g: Gasto) {
