@@ -22,6 +22,15 @@ export const Route = createFileRoute("/reportes")({
   component: Reportes,
 });
 
+function tipoArchivo(nombre: string, tipo: string) {
+  const n = nombre.toLowerCase();
+  const t = (tipo || "").toLowerCase();
+  if (n.endsWith(".xml") || t.includes("xml")) return "XML";
+  if (n.endsWith(".pdf") || t.includes("pdf")) return "PDF";
+  if (t.startsWith("image/") || /\.(jpe?g|png|heic|webp|gif)$/.test(n)) return "Imagen";
+  return "Archivo";
+}
+
 function Reportes() {
   const { estado, registrar } = useStore();
   const [eventoId, setEventoId] = useState(estado.eventos[0]?.id ?? "");
