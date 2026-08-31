@@ -924,6 +924,12 @@ function Gastos() {
                       </li>
                     ) : null}
                     <li className="text-muted-foreground">
+                      Tipo de comprobante: <strong>{g.tipoComprobante}</strong>
+                      {g.paisEmision
+                        ? ` · País de emisión: ${PAISES.find((p) => p.clave === g.paisEmision)?.nombre ?? g.paisEmision}`
+                        : ""}
+                    </li>
+                    <li className="text-muted-foreground">
                       Subtotal: {g.subtotal !== undefined ? mxn(g.subtotal) : "—"} · IVA:{" "}
                       {g.iva !== undefined ? mxn(g.iva) : "—"} · Total que se comprueba:{" "}
                       <strong>{mxn(g.monto)}</strong> {g.moneda}
