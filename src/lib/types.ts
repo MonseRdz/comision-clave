@@ -94,6 +94,12 @@ export type Gasto = {
   motivoRechazo?: string | undefined;
   folioDelegacion?: string | undefined;
   iaExtraccion?: IaExtraccion | undefined;
+  /** Datos fiscales del CFDI. `monto` es siempre el Total pagado. */
+  subtotal?: number | undefined;
+  iva?: number | undefined;
+  uuidFiscal?: string | undefined;
+  rfcEmisor?: string | undefined;
+  rfcReceptor?: string | undefined;
 
 };
 
@@ -136,6 +142,7 @@ export type Estado = {
   justificacionesSinCFDI: string[];
   proveedores: string[];
   topeSinComprobante: number;
+  rfcAdemeba: string;
   versionReglas: string;
   usuarioActualId: string;
 };

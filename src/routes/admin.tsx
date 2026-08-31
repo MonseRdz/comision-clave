@@ -39,6 +39,7 @@ export const Route = createFileRoute("/admin")({
 function Admin() {
   const { estado, setEstado, registrar, usuarioActual, perfiles, recargar } = useStore();
   const [tope, setTope] = useState(String(estado.topeSinComprobante));
+  const [rfc, setRfc] = useState(estado.rfcAdemeba);
   const [rubro, setRubro] = useState("");
   const [motivo, setMotivo] = useState("");
   const [aviso, setAviso] = useState("");
@@ -116,6 +117,15 @@ function Admin() {
     setEstado((e) => ({ ...e, topeSinComprobante: valor }));
     registrar("Configuración", `Tope de gastos sin comprobante fijado en ${mxn(valor)}.`);
     setAviso(`Tope sin factura actualizado a ${mxn(valor)}.`);
+  }
+
+  function guardarRfc(ev: React.FormEvent) {
+    ev.preventDefault();
+    const valor = rfc.trim().toUpperCase();
+    if (valor.length < 12) return setAviso("Captura un RFC válido de ADEMEBA (12 o 13 caracteres).");
+    setEstado((e) => ({ ...e, rfcAdemeba: valor }));
+    registrar("Configuración", `RFC de ADEMEBA fijado en ${valor}.`);
+    setAviso(`RFC de ADEMEBA actualizado a ${valor}.`);
   }
 
   return (
@@ -287,6 +297,29 @@ function Admin() {
           </Campo>
           <Boton type="submit">Guardar tope</Boton>
           <Etiqueta tono="marca">Vigente: {mxn(estado.topeSinComprobante)}</Etiqueta>
+        </form>
+      </Panel>
+
+      <Panel>
+        <TituloPanel sub="RFC receptor esperado en las facturas que se comprueban.">
+          RFC de ADEMEBA
+        </TituloPanel>
+        <form onSubmit={guardarRfc} className="flex flex-wrap items-end gap-3">
+          <Campo
+            etiqueta="RFC receptor"
+            id="rfc-ademeba"
+            ayuda="Se compara con el RFC del receptor del CFDI; si no coincide, se avisa al guardar."
+          >
+            <Entrada
+              id="rfc-ademeba"
+              value={rfc}
+              onChange={(e) => setRfc(e.target.value.toUpperCase())}
+              className="w-64"
+              placeholder="Ej. ADE123456AB9"
+            />
+          </Campo>
+          <Boton type="submit">Guardar RFC</Boton>
+          <Etiqueta tono="marca">Vigente: {estado.rfcAdemeba || "sin capturar"}</Etiqueta>
         </form>
       </Panel>
 
