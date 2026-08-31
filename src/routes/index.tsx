@@ -18,7 +18,7 @@ import {
   VacioGrafica,
 } from "@/components/graficas";
 import { DIAS_DEVUELTO, DIAS_EN_DICTAMEN, MAX_ATENCION, PCT_MINIMO_RUBRO } from "@/lib/umbrales";
-import type { Gasto } from "@/lib/types";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({

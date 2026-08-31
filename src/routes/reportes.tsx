@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore, mxn, diasDesde, fechaCorta, cuentaComprobado, estaPendiente, esBorrador } from "@/lib/store";
 import { Panel, TituloPanel, Boton, Selector, Campo, Tabla, Celda, Etiqueta, Aviso } from "@/components/glass";
-import { suma } from "@/lib/dinero";
+import { resta, suma } from "@/lib/dinero";
 
 export const Route = createFileRoute("/reportes")({
   head: () => ({
@@ -58,7 +58,7 @@ function Reportes() {
                   </p>
                 </Celda>
                 <Celda>{asig ? Math.round((comp / asig) * 100) : 0}%</Celda>
-                <Celda>{mxn(asig - comp)}</Celda>
+                <Celda>{mxn(resta(asig, comp))}</Celda>
                 <Celda>{nombres.join(", ") || "Ninguno"}</Celda>
                 <Celda>
                   <Etiqueta tono={atraso > 7 ? "error" : atraso >= 3 ? "alerta" : "ok"}>{atraso} días</Etiqueta>
