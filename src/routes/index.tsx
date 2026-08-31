@@ -18,6 +18,7 @@ import {
   VacioGrafica,
 } from "@/components/graficas";
 import { DIAS_DEVUELTO, DIAS_EN_DICTAMEN, MAX_ATENCION, PCT_MINIMO_RUBRO } from "@/lib/umbrales";
+import { resumenSinFactura } from "@/lib/sin-factura";
 
 
 export const Route = createFileRoute("/")({
@@ -183,6 +184,17 @@ function Tablero() {
   const atencion = filasAtencion.slice(0, MAX_ATENCION);
 
   const sumaEscrita = `Aprobado ${mxn(aprobadoTotal)} + En dictamen ${mxn(dictamenTotal)} + Sin comprobar ${mxn(sinComprobar)} = ${mxn(asignado)} de presupuesto asignado.`;
+
+  // Comprobación sin factura: indicador de observación, sin umbral definido.
+  const sinFactura = resumenSinFactura(estado.gastos);
+  const sinFacturaEventos = estado.eventos
+    .map((ev) => {
+      const r = resumenSinFactura(estado.gastos.filter((g) => g.eventoId === ev.id));
+      return { id: ev.id, nombre: ev.nombre, monto: r.monto, pct: r.pct };
+    })
+    .filter((x) => x.monto > 0)
+    .sort((a, b) => b.pct - a.pct)
+    .slice(0, 5);
 
   return (
     <div className="grid gap-4 pt-4">
