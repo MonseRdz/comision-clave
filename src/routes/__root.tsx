@@ -30,7 +30,7 @@ function NotFoundComponent() {
         <div className="mt-6">
           <Link
             to="/"
-            className="btn-base bg-primary text-primary-foreground"
+            className="btn-base bg-accent text-white"
           >
             Ir al tablero
           </Link>
@@ -60,11 +60,11 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
               router.invalidate();
               reset();
             }}
-            className="btn-base bg-primary text-primary-foreground"
+            className="btn-base bg-accent text-white"
           >
             Intentar de nuevo
           </button>
-          <a href="/" className="btn-base bg-glass-strong text-foreground">
+          <a href="/" className="btn-base bg-white text-ink">
             Ir al inicio
           </a>
         </div>
@@ -94,6 +94,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Archivo:wdth,wght@100..125,500..700&display=swap",
+      },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
     ],
   }),
