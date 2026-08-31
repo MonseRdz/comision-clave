@@ -77,6 +77,11 @@ export async function cargarDatos(): Promise<DatosOperacion> {
         tipoCambio: Number(g.tipo_cambio),
         montoMXN: Number(g.monto_mxn),
         sinCFDI: g.sin_cfdi,
+        tipoComprobante: (((g as Record<string, unknown>)["tipo_comprobante"] as
+          | Gasto["tipoComprobante"]
+          | undefined) ??
+          (g.sin_cfdi ? "Sin comprobante fiscal" : "CFDI nacional")) as Gasto["tipoComprobante"],
+        paisEmision: String((g as Record<string, unknown>)["pais_emision"] ?? ""),
         justificacion: g.justificacion,
         origenPais: g.origen_pais ?? "",
         origenCiudad: g.origen_ciudad ?? "",
