@@ -832,7 +832,17 @@ function Gastos() {
                 {g.moneda !== "MXN" ? ` × ${g.tipoCambio}` : ""}
               </Celda>
               <Celda>{mxn(g.montoMXN)}</Celda>
-              <Celda>{g.sinCFDI ? `Sin CFDI — ${g.justificacion}` : "Con CFDI"}</Celda>
+              <Celda>
+                <Etiqueta tono="neutro">{g.tipoComprobante}</Etiqueta>
+                {g.tipoComprobante === "Sin comprobante fiscal" && g.justificacion ? (
+                  <p className="mt-1 text-xs">{g.justificacion}</p>
+                ) : null}
+                {g.tipoComprobante === "Comprobante extranjero" && g.paisEmision ? (
+                  <p className="mt-1 text-xs">
+                    País: {PAISES.find((p) => p.clave === g.paisEmision)?.nombre ?? g.paisEmision}
+                  </p>
+                ) : null}
+              </Celda>
               <Celda>
                 <Etiqueta tono={tonoEstatus(g.estatus)}>{g.estatus}</Etiqueta>
                 {g.observaciones ? (
