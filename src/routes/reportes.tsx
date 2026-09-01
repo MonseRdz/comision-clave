@@ -7,12 +7,12 @@ import { resta, suma } from "@/lib/dinero";
 export const Route = createFileRoute("/reportes")({
   head: () => ({
     meta: [
-      { title: "Reportes y expediente nominal | Comprobación de Gastos" },
+      { title: "Reportes y expediente nominal | Tresora Comprobación" },
       {
         name: "description",
         content: "Reporte de avance por evento y expediente de evidencia nominal para auditoría.",
       },
-      { property: "og:title", content: "Reportes y expediente nominal | Comprobación de Gastos" },
+      { property: "og:title", content: "Reportes y expediente nominal | Tresora Comprobación" },
       {
         property: "og:description",
         content: "Vincula comprobantes con participantes, estatus final y dictaminador.",

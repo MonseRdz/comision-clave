@@ -6,12 +6,12 @@ import { Panel, TituloPanel, Boton, Campo, Entrada, Aviso } from "@/components/g
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
-      { title: "Restablecer contraseña | Comprobación de Gastos" },
+      { title: "Restablecer contraseña | Tresora Comprobación" },
       {
         name: "description",
         content: "Define una nueva contraseña de acceso al sistema de comprobación de gastos.",
       },
-      { property: "og:title", content: "Restablecer contraseña | Comprobación de Gastos" },
+      { property: "og:title", content: "Restablecer contraseña | Tresora Comprobación" },
       {
         property: "og:description",
         content: "Página segura para definir una nueva contraseña de acceso.",

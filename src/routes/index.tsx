@@ -24,13 +24,13 @@ import { resumenSinFactura } from "@/lib/sin-factura";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Tablero de gestión directiva | Comprobación de Gastos" },
+      { title: "Tablero de gestión directiva | Tresora Comprobación" },
       {
         name: "description",
         content:
           "Indicadores de presupuesto, antigüedad de pendientes, monto en riesgo y delegaciones vigentes.",
       },
-      { property: "og:title", content: "Tablero de gestión directiva | Comprobación de Gastos" },
+      { property: "og:title", content: "Tablero de gestión directiva | Tresora Comprobación" },
       {
         property: "og:description",
         content: "Vista de alto nivel del avance de comprobación y semáforo de auditoría.",

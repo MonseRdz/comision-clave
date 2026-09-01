@@ -18,12 +18,12 @@ import {
 export const Route = createFileRoute("/aprobacion")({
   head: () => ({
     meta: [
-      { title: "Aprobación definitiva | Comprobación de Gastos" },
+      { title: "Aprobación definitiva | Tresora Comprobación" },
       {
         name: "description",
         content: "Consola del Contralor para aprobar o rechazar gastos y delegar facultades.",
       },
-      { property: "og:title", content: "Aprobación definitiva | Comprobación de Gastos" },
+      { property: "og:title", content: "Aprobación definitiva | Tresora Comprobación" },
       {
         property: "og:description",
         content: "Dictamen final inmutable y gestión de delegaciones de autoridad.",

@@ -18,12 +18,12 @@ import {
 export const Route = createFileRoute("/eventos")({
   head: () => ({
     meta: [
-      { title: "Eventos y participantes | Comprobación de Gastos" },
+      { title: "Eventos y participantes | Tresora Comprobación" },
       {
         name: "description",
         content: "Registro de eventos deportivos y carga de la lista nominal autorizada.",
       },
-      { property: "og:title", content: "Eventos y participantes | Comprobación de Gastos" },
+      { property: "og:title", content: "Eventos y participantes | Tresora Comprobación" },
       {
         property: "og:description",
         content: "Configura torneos, sedes, claves presupuestales y participantes autorizados.",

@@ -18,12 +18,12 @@ import {
 export const Route = createFileRoute("/revision")({
   head: () => ({
     meta: [
-      { title: "Validación técnica | Comprobación de Gastos" },
+      { title: "Validación técnica | Tresora Comprobación" },
       {
         name: "description",
         content: "Consola del Revisor para validar comprobaciones o devolverlas con observaciones.",
       },
-      { property: "og:title", content: "Validación técnica | Comprobación de Gastos" },
+      { property: "og:title", content: "Validación técnica | Tresora Comprobación" },
       {
         property: "og:description",
         content: "Dictamen técnico de primer nivel sobre los gastos comprobados.",

@@ -8,13 +8,13 @@ import { Boton, Etiqueta, Panel, TituloPanel } from "@/components/glass";
 export const Route = createFileRoute("/legal")({
   head: () => ({
     meta: [
-      { title: "Privacidad y Términos | Comprobación de Gastos ADEMEBA" },
+      { title: "Privacidad y Términos | Tresora Comprobación ADEMEBA" },
       {
         name: "description",
         content:
           "Aviso de privacidad LFPDPPP y términos y condiciones de uso de la plataforma de comprobación de gastos de ADEMEBA.",
       },
-      { property: "og:title", content: "Privacidad y Términos | Comprobación de Gastos ADEMEBA" },
+      { property: "og:title", content: "Privacidad y Términos | Tresora Comprobación ADEMEBA" },
       {
         property: "og:description",
         content: "Aviso de privacidad y reglas de buen uso de la información en ADEMEBA.",
