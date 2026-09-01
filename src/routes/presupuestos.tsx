@@ -17,12 +17,12 @@ import {
 export const Route = createFileRoute("/presupuestos")({
   head: () => ({
     meta: [
-      { title: "Presupuestos por rubro | Comprobación de Gastos" },
+      { title: "Presupuestos por rubro | Tresora Comprobación" },
       {
         name: "description",
         content: "Asignación de montos por evento y rubro con comisionado responsable.",
       },
-      { property: "og:title", content: "Presupuestos por rubro | Comprobación de Gastos" },
+      { property: "og:title", content: "Presupuestos por rubro | Tresora Comprobación" },
       {
         property: "og:description",
         content: "Define techos de gasto por rubro y asigna responsables de comprobación.",

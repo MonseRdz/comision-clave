@@ -53,7 +53,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               className="h-10 w-10 rounded-lg border border-hair bg-white object-contain p-0.5"
             />
             <div>
-              <p className="titulo-tarjeta text-base leading-tight">Comprobación de Gastos</p>
+              <p className="titulo-tarjeta text-base leading-tight">Tresora Comprobación</p>
               <p className="text-xs text-muted-foreground">ADEMEBA · Justificación de recursos públicos</p>
             </div>
           </div>

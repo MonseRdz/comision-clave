@@ -78,13 +78,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Comprobación de Gastos | ADEMEBA" },
+      { title: "Tresora Comprobación | ADEMEBA" },
       {
         name: "description",
         content:
           "Plataforma para comprobar gastos de eventos deportivos con CFDI, evidencia nominal y dictamen.",
       },
-      { property: "og:title", content: "Comprobación de Gastos | ADEMEBA" },
+      { property: "og:title", content: "Tresora Comprobación | ADEMEBA" },
       {
         property: "og:description",
         content: "Control de comprobación de recursos públicos para asociaciones deportivas.",

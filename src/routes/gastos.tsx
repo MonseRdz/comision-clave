@@ -26,12 +26,12 @@ import {
 export const Route = createFileRoute("/gastos")({
   head: () => ({
     meta: [
-      { title: "Registro de gastos | Comprobación de Gastos" },
+      { title: "Registro de gastos | Tresora Comprobación" },
       {
         name: "description",
         content: "Carga de CFDI, evidencia nominal, gastos sin factura y moneda extranjera.",
       },
-      { property: "og:title", content: "Registro de gastos | Comprobación de Gastos" },
+      { property: "og:title", content: "Registro de gastos | Tresora Comprobación" },
       {
         property: "og:description",
         content: "Registra comprobaciones con archivos adjuntos y participantes autorizados.",

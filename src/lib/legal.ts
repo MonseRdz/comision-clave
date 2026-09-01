@@ -45,7 +45,7 @@ export const TERMINOS: { titulo: string; texto: string }[] = [
   {
     titulo: "1. Objeto de la plataforma",
     texto:
-      "Esta aplicación es una herramienta interna de ADEMEBA para centralizar la comprobación de gastos de eventos deportivos, la evidencia nominal y el dictamen de comprobaciones. Su uso está restringido al personal autorizado por el Contralor.",
+      "Tresora Comprobación es la herramienta interna de ADEMEBA para centralizar la comprobación de gastos de eventos deportivos, la evidencia nominal y el dictamen de comprobaciones. Su uso está restringido al personal autorizado por el Contralor.",
   },
   {
     titulo: "2. Acceso y roles",

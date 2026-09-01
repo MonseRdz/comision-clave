@@ -20,7 +20,7 @@ function Encabezado({ sub }: { sub: string }) {
         className="h-12 w-12 rounded-lg border-2 border-border-strong bg-white object-contain p-0.5"
       />
       <div>
-        <h1 className="text-lg font-black leading-tight">Comprobación de Gastos</h1>
+        <h1 className="text-lg font-black leading-tight">Tresora Comprobación</h1>
         <p className="text-xs text-muted-foreground">{sub}</p>
       </div>
     </div>

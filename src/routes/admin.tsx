@@ -20,13 +20,13 @@ import {
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Usuarios y configuración | Comprobación de Gastos" },
+      { title: "Usuarios y configuración | Tresora Comprobación" },
       {
         name: "description",
         content:
           "Aprobación de solicitudes de acceso, asignación de roles, tope de gastos sin comprobante y catálogos maestros.",
       },
-      { property: "og:title", content: "Usuarios y configuración | Comprobación de Gastos" },
+      { property: "og:title", content: "Usuarios y configuración | Tresora Comprobación" },
       {
         property: "og:description",
         content: "Administra accesos, roles, topes y catálogos de la comprobación de gastos.",
