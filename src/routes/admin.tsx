@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore, mxn, fechaHora } from "@/lib/store";
 import { enviarCorreoPrueba } from "@/lib/email.functions";
@@ -46,8 +46,19 @@ function Admin() {
   const [rolSolicitud, setRolSolicitud] = useState<Record<string, Rol>>({});
   const [ocupado, setOcupado] = useState("");
   const [correoPrueba, setCorreoPrueba] = useState("");
+  const [totalBitacora, setTotalBitacora] = useState<number | null>(null);
 
   const esAdmin = usuarioActual.rol === "Contralor";
+
+  useEffect(() => {
+    if (!esAdmin) return;
+    void (async () => {
+      const { count, error } = await supabase
+        .from("bitacora")
+        .select("*", { count: "exact", head: true });
+      if (!error) setTotalBitacora(count ?? 0);
+    })();
+  }, [esAdmin]);
 
   if (!esAdmin) {
     return (
@@ -385,8 +396,11 @@ function Admin() {
 
       <Panel>
         <TituloPanel sub="Registro histórico inmutable de toda acción.">Bitácora</TituloPanel>
+        <p className="mb-2 text-sm text-muted-foreground">
+          Mostrando {Math.min(estado.bitacora.length, 500)} de {totalBitacora ?? estado.bitacora.length} asientos.
+        </p>
         <Tabla cabeceras={["Fecha y hora", "Usuario", "Acción", "Detalle"]}>
-          {estado.bitacora.slice(0, 40).map((b) => (
+          {estado.bitacora.slice(0, 500).map((b) => (
             <tr key={b.id}>
               <Celda>{fechaHora(b.fecha)}</Celda>
               <Celda>{b.actor}</Celda>
@@ -395,6 +409,11 @@ function Admin() {
             </tr>
           ))}
         </Tabla>
+        {(totalBitacora ?? 0) > 500 && (
+          <p className="mt-3 text-sm font-medium text-amber-600">
+            Hay asientos más antiguos que no se muestran. Exporta la bitácora desde la base de datos para consultarlos.
+          </p>
+        )}
       </Panel>
     </div>
   );

@@ -37,7 +37,7 @@ export async function cargarDatos(): Promise<DatosOperacion> {
       supabase.from("presupuestos").select("*"),
       supabase.from("gastos").select("*").order("creado_en", { ascending: false }),
       supabase.from("delegaciones").select("*"),
-      supabase.from("bitacora").select("*").order("fecha", { ascending: false }).limit(400),
+      supabase.from("bitacora").select("*").order("fecha", { ascending: false }).limit(500),
       supabase.from("aceptaciones").select("*"),
       supabase.from("catalogos").select("*").order("valor"),
       supabase.from("configuracion").select("*").maybeSingle(),
