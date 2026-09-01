@@ -1,13 +1,13 @@
 // Documentos legales de la plataforma. Cambiar el texto implica subir la
 // versión para forzar una nueva aceptación de todos los usuarios.
 
-export const VERSION_LEGAL = "LEGAL v1.0";
+export const VERSION_LEGAL = "LEGAL v1.1";
 
 export const AVISO_PRIVACIDAD: { titulo: string; texto: string }[] = [
   {
     titulo: "1. Responsable del tratamiento de datos",
     texto:
-      "ADEMEBA (Asociación Deportiva Estatal de Mexicali de Básquetbol A.C.), a través de su Contralor, es responsable del tratamiento de los datos personales recabados en esta plataforma. Para ejercer derechos ARCO (Acceso, Rectificación, Cancelación y Oposición) o revocar consentimientos, el usuario debe dirigir su solicitud al Contralor de ADEMEBA por los canales internos de la asociación.",
+      "ADEMEBA (ASOCIACION DEPORTIVA MEXICANA DE BASQUETBOL A.C.), a través de su Contralor, es responsable del tratamiento de los datos personales recabados en esta plataforma. Para ejercer derechos ARCO (Acceso, Rectificación, Cancelación y Oposición) o revocar consentimientos, el usuario debe dirigir su solicitud al Contralor de ADEMEBA por los canales internos de la asociación.",
   },
   {
     titulo: "2. Datos personales que se recaban",
