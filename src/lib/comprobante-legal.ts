@@ -58,7 +58,7 @@ export function descargarComprobanteLegal(params: {
   doc.setFont("helvetica", "normal");
   const declaracion = doc.splitTextToSize(
     "Por medio de este comprobante se acredita que la persona identificada leyó y aceptó el Aviso de " +
-      "Privacidad (conforme a la LFPDPPP) y los Términos y Condiciones de Uso de la plataforma de " +
+      "Privacidad (conforme a la LFPDPPP) y los Términos y Condiciones de Uso de la plataforma " +
       "Tresora Comprobación de ADEMEBA. La aceptación quedó asentada en la bitácora inmutable del " +
       "sistema con la fecha, hora y versión indicadas.",
     W - 40,
@@ -77,7 +77,7 @@ export function descargarComprobanteLegal(params: {
   doc.setFontSize(8);
   doc.setTextColor(120, 120, 120);
   doc.text(
-    `Generado el ${new Date().toLocaleString("es-MX")} · Plataforma de Tresora Comprobación ADEMEBA`,
+    `Generado el ${new Date().toLocaleString("es-MX")} · Plataforma Tresora Comprobación · ADEMEBA`,
     W / 2,
     272,
     { align: "center" },
