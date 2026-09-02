@@ -1,13 +1,13 @@
 // Documentos legales de la plataforma. Cambiar el texto implica subir la
 // versión para forzar una nueva aceptación de todos los usuarios.
 
-export const VERSION_LEGAL = "LEGAL v1.1";
+export const VERSION_LEGAL = "LEGAL v1.2";
 
 export const AVISO_PRIVACIDAD: { titulo: string; texto: string }[] = [
   {
     titulo: "1. Responsable del tratamiento de datos",
     texto:
-      "ADEMEBA (ASOCIACION DEPORTIVA MEXICANA DE BASQUETBOL A.C.), a través de su Contralor, es responsable del tratamiento de los datos personales recabados en esta plataforma. Para ejercer derechos ARCO (Acceso, Rectificación, Cancelación y Oposición) o revocar consentimientos, el usuario debe dirigir su solicitud al Contralor de ADEMEBA por los canales internos de la asociación.",
+      "ADEMEBA (ASOCIACION DEPORTIVA MEXICANA DE BASQUETBOL A.C.), con domicilio en Avenida Xola 61, interior 1, Colonia Álamos, Alcaldía Benito Juárez, C.P. 03400, Ciudad de México, es responsable del tratamiento de los datos personales recabados en esta plataforma. Para ejercer los derechos ARCO (Acceso, Rectificación, Cancelación y Oposición) o revocar consentimientos, el titular debe dirigir su solicitud al correo electrónico contacto@ademeba.com.mx, o presentarla por escrito en el domicilio señalado. La solicitud debe indicar el nombre del titular, el medio para comunicarle la respuesta, los documentos que acrediten su identidad, y la descripción clara de los datos personales respecto de los que busca ejercer el derecho.",
   },
   {
     titulo: "2. Datos personales que se recaban",
@@ -37,7 +37,7 @@ export const AVISO_PRIVACIDAD: { titulo: string; texto: string }[] = [
   {
     titulo: "7. Transferencias de datos",
     texto:
-      "No se realizan transferencias de datos personales a terceros, salvo las requeridas por CONADE u órganos fiscalizadores en ejercicio de sus atribuciones, o las exigidas por autoridad competente conforme a la ley.",
+      "Los datos personales pueden ser remitidos al proveedor de servicios de inteligencia artificial descrito en el numeral 4, que los trata por cuenta y bajo instrucciones de ADEMEBA, con la única finalidad de transcribir la información contenida en los comprobantes. Fuera de ese supuesto, no se realizan transferencias de datos personales a terceros, salvo las requeridas por CONADE u órganos fiscalizadores en ejercicio de sus atribuciones, o las exigidas por autoridad competente conforme a la ley.",
   },
 ];
 
