@@ -38,7 +38,12 @@ export type Presupuesto = {
 export type Archivo = {
   nombre: string;
   tipo: string;
-  dataUrl: string;
+  /** Ruta dentro del bucket privado de comprobantes: fuente de verdad del documento. */
+  ruta?: string | undefined;
+  /** Huella SHA-256 del contenido, para el candado antiduplicados. */
+  hash?: string | undefined;
+  /** Contenido en memoria mientras se sube; nunca se guarda en la base. */
+  dataUrl?: string | undefined;
   /** Participante al que corresponde el pase de abordar, si aplica. */
   participanteId?: string | undefined;
 };

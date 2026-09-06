@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore, mxn, fechaCorta } from "@/lib/store";
+import { actualizarGasto, actualizarDelegacion, insertarDelegacion } from "@/lib/db";
 import type { Gasto } from "@/lib/types";
 import {
   Panel,
@@ -34,9 +35,11 @@ export const Route = createFileRoute("/aprobacion")({
 });
 
 function Aprobacion() {
-  const { estado, setEstado, registrar, usuarioActual, puedeAprobar, delegacionVigente } = useStore();
+  const { estado, setEstado, aplicarGasto, registrar, usuarioActual, puedeAprobar, delegacionVigente } =
+    useStore();
   const [motivos, setMotivos] = useState<Record<string, string>>({});
   const [aviso, setAviso] = useState("");
+  const [error, setError] = useState("");
   const [d, setD] = useState({
     paraId: estado.usuarios.find((u) => u.rol === "Director")?.id ?? "",
     fechaInicio: "",
@@ -47,47 +50,75 @@ function Aprobacion() {
   const esContralor = usuarioActual.rol === "Contralor";
   const porAprobar = estado.gastos.filter((g) => g.estatus === "Validado por Revisor");
 
-  function dictaminar(g: Gasto, estatus: "Aprobado" | "Rechazado", motivo?: string) {
+  async function dictaminar(g: Gasto, estatus: "Aprobado" | "Rechazado", motivo?: string) {
     const folio = usuarioActual.rol === "Director" ? delegacionVigente?.folio : undefined;
-    setEstado((e) => ({
-      ...e,
-      gastos: e.gastos.map((x) =>
-        x.id === g.id
-          ? {
-              ...x,
-              estatus,
-              dictaminadorId: usuarioActual.id,
-              motivoRechazo: estatus === "Rechazado" ? motivo : undefined,
-              folioDelegacion: folio,
-            }
-          : x,
-      ),
-    }));
     const texto = `Gasto de ${g.proveedor} por ${mxn(g.montoMXN)} ${estatus.toLowerCase()} por ${usuarioActual.nombre}${
       folio ? ` (delegación ${folio})` : ""
     }${motivo ? ` — motivo: ${motivo}` : ""}.`;
-    registrar("Dictamen definitivo", texto);
-    setAviso(texto);
+    try {
+      const guardado = await actualizarGasto(g.id, {
+        estatus,
+        dictaminador_id: usuarioActual.id,
+        motivo_rechazo: estatus === "Rechazado" ? (motivo ?? null) : null,
+        folio_delegacion: folio ?? null,
+      });
+      aplicarGasto(guardado);
+      await registrar("Dictamen definitivo", texto);
+      setError("");
+      setAviso(texto);
+    } catch (err: unknown) {
+      setAviso("");
+      setError(err instanceof Error ? err.message : String(err));
+    }
   }
 
-  function crearDelegacion(ev: React.FormEvent) {
+  async function crearDelegacion(ev: React.FormEvent) {
     ev.preventDefault();
     if (!d.paraId || !d.fechaInicio || !d.fechaFin || !d.motivo.trim())
       return setAviso("Completa destinatario, fechas y motivo de la delegación.");
     const folio = `DEL-${String(estado.delegaciones.length + 1).padStart(3, "0")}`;
-    const nueva = { folio, deId: usuarioActual.id, ...d, motivo: d.motivo.trim(), estatus: "Vigente" as const };
-    setEstado((e) => ({ ...e, delegaciones: [...e.delegaciones, nueva] }));
     const para = estado.usuarios.find((u) => u.id === d.paraId);
-    registrar(
-      "Delegación de autoridad",
-      `Folio ${folio}: facultades delegadas a ${para?.nombre} del ${d.fechaInicio} al ${d.fechaFin} por "${nueva.motivo}".`,
-    );
-    setAviso(`Delegación ${folio} creada hacia ${para?.nombre} (${d.fechaInicio} a ${d.fechaFin}).`);
-    setD({ ...d, fechaInicio: "", fechaFin: "", motivo: "" });
+    try {
+      const guardada = await insertarDelegacion({
+        folio,
+        deId: usuarioActual.id,
+        ...d,
+        motivo: d.motivo.trim(),
+        estatus: "Vigente",
+      });
+      setEstado((e) => ({ ...e, delegaciones: [...e.delegaciones, guardada] }));
+      await registrar(
+        "Delegación de autoridad",
+        `Folio ${folio}: facultades delegadas a ${para?.nombre} del ${d.fechaInicio} al ${d.fechaFin} por "${guardada.motivo}".`,
+      );
+      setError("");
+      setAviso(`Delegación ${folio} creada hacia ${para?.nombre} (${d.fechaInicio} a ${d.fechaFin}).`);
+      setD({ ...d, fechaInicio: "", fechaFin: "", motivo: "" });
+    } catch (err: unknown) {
+      setAviso("");
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  async function cancelarDelegacion(folio: string) {
+    try {
+      const guardada = await actualizarDelegacion(folio, { estatus: "Cancelada" });
+      setEstado((e) => ({
+        ...e,
+        delegaciones: e.delegaciones.map((y) => (y.folio === folio ? guardada : y)),
+      }));
+      await registrar("Delegación cancelada", `Se canceló la delegación ${folio}.`);
+      setError("");
+      setAviso(`Delegación ${folio} cancelada.`);
+    } catch (err: unknown) {
+      setAviso("");
+      setError(err instanceof Error ? err.message : String(err));
+    }
   }
 
   return (
     <div className="grid gap-4 pt-4">
+      {error ? <Aviso tono="error">{error}</Aviso> : null}
       {aviso ? <Aviso>{aviso}</Aviso> : null}
 
       {delegacionVigente ? (
@@ -215,18 +246,7 @@ function Aprobacion() {
                 </Celda>
                 <Celda>
                   {esContralor && x.estatus === "Vigente" ? (
-                    <Boton
-                      variante="neutro"
-                      onClick={() => {
-                        setEstado((e) => ({
-                          ...e,
-                          delegaciones: e.delegaciones.map((y) =>
-                            y.folio === x.folio ? { ...y, estatus: "Cancelada" as const } : y,
-                          ),
-                        }));
-                        registrar("Delegación cancelada", `Se canceló la delegación ${x.folio}.`);
-                        setAviso(`Delegación ${x.folio} cancelada.`);
-                      }}
+                    <Boton variante="neutro" onClick={() => void cancelarDelegacion(x.folio)}
                     >
                       Cancelar
                     </Boton>

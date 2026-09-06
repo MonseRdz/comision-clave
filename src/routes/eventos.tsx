@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore, nuevoId, fechaCorta } from "@/lib/store";
+import { insertarEvento, insertarParticipante } from "@/lib/db";
 import type { Participante } from "@/lib/types";
 import {
   Panel,
@@ -44,44 +45,59 @@ function Eventos() {
     estatus: "Activo" as "Activo" | "Próximo" | "Cerrado",
   });
   const [aviso, setAviso] = useState("");
+  const [error, setError] = useState("");
   const [sel, setSel] = useState(estado.eventos[0]?.id ?? "");
   const [pNombre, setPNombre] = useState("");
   const [pTipo, setPTipo] = useState<Participante["tipo"]>("Jugador");
 
   const evento = estado.eventos.find((e) => e.id === sel);
 
-  function crear(ev: React.FormEvent) {
+  async function crear(ev: React.FormEvent) {
     ev.preventDefault();
     if (!f.nombre.trim() || !f.clave.trim() || !f.sede.trim())
       return setAviso("Nombre, sede y clave presupuestal son obligatorios.");
-    const nuevo = { id: nuevoId("e"), ...f, nombre: f.nombre.trim(), participantes: [] };
-    setEstado((e) => ({ ...e, eventos: [...e.eventos, nuevo] }));
-    registrar("Alta de evento", `Se registró "${nuevo.nombre}" (clave ${nuevo.clave}).`);
-    setAviso(`Evento "${nuevo.nombre}" registrado.`);
-    setSel(nuevo.id);
-    setF({ nombre: "", sede: "", fechaInicio: "", fechaFin: "", clave: "", estatus: "Activo" });
+    try {
+      const guardado = await insertarEvento({ id: nuevoId("e"), ...f, nombre: f.nombre.trim() });
+      setEstado((e) => ({ ...e, eventos: [...e.eventos, guardado] }));
+      await registrar("Alta de evento", `Se registró "${guardado.nombre}" (clave ${guardado.clave}).`);
+      setError("");
+      setAviso(`Evento "${guardado.nombre}" registrado.`);
+      setSel(guardado.id);
+      setF({ nombre: "", sede: "", fechaInicio: "", fechaFin: "", clave: "", estatus: "Activo" });
+    } catch (err: unknown) {
+      setAviso("");
+      setError(err instanceof Error ? err.message : String(err));
+    }
   }
 
-  function agregarParticipante(ev: React.FormEvent) {
+  async function agregarParticipante(ev: React.FormEvent) {
     ev.preventDefault();
     if (!evento || !pNombre.trim()) return;
     const p: Participante = { id: nuevoId("p"), nombre: pNombre.trim(), tipo: pTipo };
-    setEstado((e) => ({
-      ...e,
-      eventos: e.eventos.map((x) =>
-        x.id === evento.id ? { ...x, participantes: [...x.participantes, p] } : x,
-      ),
-    }));
-    registrar(
-      "Lista nominal",
-      `Se autorizó a ${p.nombre} (${p.tipo}) en el evento ${evento.nombre}.`,
-    );
-    setAviso(`${p.nombre} agregado a la lista nominal de ${evento.nombre}.`);
-    setPNombre("");
+    try {
+      const guardado = await insertarParticipante(evento.id, p);
+      setEstado((e) => ({
+        ...e,
+        eventos: e.eventos.map((x) =>
+          x.id === evento.id ? { ...x, participantes: [...x.participantes, guardado] } : x,
+        ),
+      }));
+      await registrar(
+        "Lista nominal",
+        `Se autorizó a ${guardado.nombre} (${guardado.tipo}) en el evento ${evento.nombre}.`,
+      );
+      setError("");
+      setAviso(`${guardado.nombre} agregado a la lista nominal de ${evento.nombre}.`);
+      setPNombre("");
+    } catch (err: unknown) {
+      setAviso("");
+      setError(err instanceof Error ? err.message : String(err));
+    }
   }
 
   return (
     <div className="grid gap-4 pt-4">
+      {error ? <Aviso tono="error">{error}</Aviso> : null}
       {aviso ? <Aviso>{aviso}</Aviso> : null}
 
       <Panel>

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { ArchivoEnlace } from "@/components/archivo-enlace";
 import { useStore, mxn, diasDesde, fechaCorta, cuentaComprobado, estaPendiente, esBorrador } from "@/lib/store";
 import { Panel, TituloPanel, Boton, Selector, Campo, Tabla, Celda, Etiqueta, Aviso } from "@/components/glass";
 import { resta, suma } from "@/lib/dinero";
@@ -142,15 +143,7 @@ function Reportes() {
                         {g.archivos.map((a, i) => (
                           <li key={`${a.nombre}-${i}`} className="flex items-center gap-2">
                             <Etiqueta tono="neutro">{tipoArchivo(a.nombre, a.tipo)}</Etiqueta>
-                            <a
-                              href={a.dataUrl}
-                              download={a.nombre}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-sm underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-                            >
-                              {a.nombre}
-                            </a>
+                            <ArchivoEnlace archivo={a} />
                           </li>
                         ))}
                       </ul>

@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { useStore, hoyISO, nuevoId, fechaHora } from "@/lib/store";
+import { insertarAceptacion } from "@/lib/db";
 import { REGLAS } from "@/lib/seed";
 import { Panel, TituloPanel, Boton, Aviso, Etiqueta } from "@/components/glass";
 
@@ -8,22 +10,31 @@ export function ReglasPantalla() {
     (a) => a.usuarioId === usuarioActual.id && a.version === estado.versionReglas,
   );
 
-  function aceptar() {
+  const [error, setError] = useState("");
+
+  async function aceptar() {
     const registro = {
       id: nuevoId("ac"),
       usuarioId: usuarioActual.id,
       fecha: hoyISO(),
       version: estado.versionReglas,
     };
-    setEstado((e) => ({ ...e, aceptaciones: [...e.aceptaciones, registro] }));
-    registrar(
-      "Aceptación de reglas",
-      `${usuarioActual.nombre} aceptó las reglas institucionales ${estado.versionReglas} el ${fechaHora(registro.fecha)}.`,
-    );
+    try {
+      const guardado = await insertarAceptacion(registro);
+      setEstado((e) => ({ ...e, aceptaciones: [...e.aceptaciones, guardado] }));
+      await registrar(
+        "Aceptación de reglas",
+        `${usuarioActual.nombre} aceptó las reglas institucionales ${estado.versionReglas} el ${fechaHora(guardado.fecha)}.`,
+      );
+      setError("");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
   }
 
   return (
     <div className="mx-auto max-w-3xl pt-4">
+      {error ? <Aviso tono="error">{error}</Aviso> : null}
       <Panel>
         <TituloPanel sub={`Versión ${estado.versionReglas} · Lectura y aceptación obligatoria`}>
           Bienvenida, {usuarioActual.nombre}

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useStore, mxn, fechaHora } from "@/lib/store";
+import { actualizarConfiguracion, insertarCatalogo } from "@/lib/db";import { useStore, mxn, fechaHora } from "@/lib/store";
 import { enviarCorreoPrueba } from "@/lib/email.functions";
 import { ROLES, type Rol } from "@/lib/types";
 import {
@@ -120,23 +120,52 @@ function Admin() {
     await recargar();
   }
 
-  function guardarTope(ev: React.FormEvent) {
+  async function guardarTope(ev: React.FormEvent) {
     ev.preventDefault();
     const valor = Number(tope);
     if (!Number.isFinite(valor) || valor <= 0)
       return setAviso("El tope debe ser un monto mayor a cero.");
-    setEstado((e) => ({ ...e, topeSinComprobante: valor }));
-    registrar("Configuración", `Tope de gastos sin comprobante fijado en ${mxn(valor)}.`);
-    setAviso(`Tope sin factura actualizado a ${mxn(valor)}.`);
+    try {
+      const config = await actualizarConfiguracion({ tope_sin_comprobante: valor });
+      setEstado((e) => ({ ...e, topeSinComprobante: config.topeSinComprobante }));
+      await registrar("Configuración", `Tope de gastos sin comprobante fijado en ${mxn(valor)}.`);
+      setAviso(`Tope sin factura actualizado a ${mxn(config.topeSinComprobante)}.`);
+    } catch (err: unknown) {
+      setAviso(err instanceof Error ? err.message : String(err));
+    }
   }
 
-  function guardarRfc(ev: React.FormEvent) {
+  async function guardarRfc(ev: React.FormEvent) {
     ev.preventDefault();
     const valor = rfc.trim().toUpperCase();
     if (valor.length < 12) return setAviso("Captura un RFC válido de ADEMEBA (12 o 13 caracteres).");
-    setEstado((e) => ({ ...e, rfcAdemeba: valor }));
-    registrar("Configuración", `RFC de ADEMEBA fijado en ${valor}.`);
-    setAviso(`RFC de ADEMEBA actualizado a ${valor}.`);
+    try {
+      const config = await actualizarConfiguracion({ rfc_ademeba: valor });
+      setEstado((e) => ({ ...e, rfcAdemeba: config.rfcAdemeba }));
+      await registrar("Configuración", `RFC de ADEMEBA fijado en ${valor}.`);
+      setAviso(`RFC de ADEMEBA actualizado a ${config.rfcAdemeba}.`);
+    } catch (err: unknown) {
+      setAviso(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  async function agregarCatalogo(tipo: "rubro" | "motivo", valor: string) {
+    try {
+      const guardado = await insertarCatalogo(tipo, valor);
+      setEstado((e) =>
+        tipo === "rubro"
+          ? { ...e, rubros: [...e.rubros, guardado] }
+          : { ...e, motivosRechazo: [...e.motivosRechazo, guardado] },
+      );
+      await registrar(
+        "Catálogo",
+        tipo === "rubro" ? `Se agregó el rubro ${guardado}.` : `Se agregó el motivo de rechazo ${guardado}.`,
+      );
+      if (tipo === "rubro") setRubro("");
+      else setMotivo("");
+    } catch (err: unknown) {
+      setAviso(err instanceof Error ? err.message : String(err));
+    }
   }
 
   return (
@@ -345,9 +374,7 @@ function Admin() {
               onSubmit={(ev) => {
                 ev.preventDefault();
                 if (!rubro.trim()) return;
-                setEstado((e) => ({ ...e, rubros: [...e.rubros, rubro.trim()] }));
-                registrar("Catálogo", `Se agregó el rubro ${rubro.trim()}.`);
-                setRubro("");
+                void agregarCatalogo("rubro", rubro.trim());
               }}
             >
               <Campo etiqueta="Nuevo rubro" id="rubro">
@@ -371,9 +398,7 @@ function Admin() {
               onSubmit={(ev) => {
                 ev.preventDefault();
                 if (!motivo.trim()) return;
-                setEstado((e) => ({ ...e, motivosRechazo: [...e.motivosRechazo, motivo.trim()] }));
-                registrar("Catálogo", `Se agregó el motivo de rechazo ${motivo.trim()}.`);
-                setMotivo("");
+                void agregarCatalogo("motivo", motivo.trim());
               }}
             >
               <Campo etiqueta="Nuevo motivo de rechazo" id="motivo">
