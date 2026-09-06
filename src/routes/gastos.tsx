@@ -280,18 +280,33 @@ function Gastos() {
           rubro: g.rubro,
         },
       };
-    setEstado((e) => ({ ...e, gastos: [g, ...e.gastos] }));
-
-    registrar(
-      "Captura de gasto en borrador",
-      `${g.proveedor} por ${mxn(g.montoMXN)} (${g.rubro}) · ${g.tipoComprobante}.`,
-    );
-    setError("");
-    setAviso(
-      avisosPendientes.length
-        ? `Gasto de ${g.proveedor} guardado en borrador por ${mxn(g.montoMXN)}. Revisa: ${avisosPendientes.join("; ")}. Complétalo antes de enviarlo a revisión.`
-        : `Gasto de ${g.proveedor} guardado en borrador por ${mxn(g.montoMXN)}. Envíalo a revisión cuando esté listo.`,
-    );
+    setGuardando(true);
+    let subidos: string[] = [];
+    try {
+      const archivosSubidos = await subirArchivos(g.id, g.archivos);
+      subidos = archivosSubidos.map((a) => a.ruta).filter((r): r is string => Boolean(r));
+      const guardado = await insertarGasto({ ...g, archivos: archivosSubidos });
+      aplicarGasto(guardado);
+      await registrar(
+        "Captura de gasto en borrador",
+        `${guardado.proveedor} por ${mxn(guardado.montoMXN)} (${guardado.rubro}) · ${guardado.tipoComprobante}.`,
+      );
+      setError("");
+      setAviso(
+        avisosPendientes.length
+          ? `Gasto de ${guardado.proveedor} guardado en borrador por ${mxn(guardado.montoMXN)}. Revisa: ${avisosPendientes.join("; ")}. Complétalo antes de enviarlo a revisión.`
+          : `Gasto de ${guardado.proveedor} guardado en borrador por ${mxn(guardado.montoMXN)}. Envíalo a revisión cuando esté listo.`,
+      );
+    } catch (err: unknown) {
+      await borrarArchivos(subidos);
+      setAviso("");
+      setError(
+        `No se pudo guardar el gasto en el servidor: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      setGuardando(false);
+      return;
+    }
+    setGuardando(false);
     setF({
       ...f,
       proveedor: "",
@@ -315,21 +330,25 @@ function Gastos() {
   }
 
 
-  function enviarARevision(g: Gasto) {
+  async function enviarARevision(g: Gasto) {
     if (g.estatus !== "Borrador" && g.estatus !== "Devuelto para corrección") return;
-    setEstado((e) => ({
-      ...e,
-      gastos: e.gastos.map((x) => (x.id === g.id ? { ...x, estatus: "Registrado" as const } : x)),
-    }));
-    registrar(
-      g.estatus === "Borrador" ? "Envío a revisión" : "Reenvío a revisión",
-      `Gasto de ${g.proveedor} por ${mxn(g.montoMXN)} (${g.rubro}) ${g.estatus === "Borrador" ? "enviado" : "reenviado"} a revisión.`,
-    );
-    setError("");
-    setAviso(`Gasto de "${g.proveedor}" ${g.estatus === "Borrador" ? "enviado" : "reenviado"} a revisión.`);
+    const primero = g.estatus === "Borrador";
+    try {
+      const guardado = await actualizarGasto(g.id, { estatus: "Registrado" });
+      aplicarGasto(guardado);
+      await registrar(
+        primero ? "Envío a revisión" : "Reenvío a revisión",
+        `Gasto de ${g.proveedor} por ${mxn(g.montoMXN)} (${g.rubro}) ${primero ? "enviado" : "reenviado"} a revisión.`,
+      );
+      setError("");
+      setAviso(`Gasto de "${g.proveedor}" ${primero ? "enviado" : "reenviado"} a revisión.`);
+    } catch (err: unknown) {
+      setAviso("");
+      setError(err instanceof Error ? err.message : String(err));
+    }
   }
 
-  function guardarEdicion(g: Gasto) {
+  async function guardarEdicion(g: Gasto) {
     if (esInmutable(g)) {
       setError(
         `El gasto de "${g.proveedor}" ya fue dictaminado (${g.estatus}) y es inmutable: no puede editarse.`,
@@ -339,18 +358,20 @@ function Gastos() {
     }
     const nuevo = Number(edicion?.monto);
     if (!Number.isFinite(nuevo) || nuevo <= 0) return setError("El monto debe ser mayor a cero.");
-    setEstado((e) => ({
-      ...e,
-      gastos: e.gastos.map((x) =>
-        x.id === g.id
-          ? { ...x, monto: nuevo, montoMXN: convertirMoneda(nuevo, x.tipoCambio) }
-          : x,
-      ),
-    }));
-    registrar("Edición de gasto", `Monto de ${g.proveedor} actualizado a ${nuevo} ${g.moneda}.`);
-    setError("");
-    setAviso(`Monto de "${g.proveedor}" actualizado.`);
-    setEdicion(null);
+    try {
+      const guardado = await actualizarGasto(g.id, {
+        monto: nuevo,
+        monto_mxn: convertirMoneda(nuevo, g.tipoCambio),
+      });
+      aplicarGasto(guardado);
+      await registrar("Edición de gasto", `Monto de ${g.proveedor} actualizado a ${nuevo} ${g.moneda}.`);
+      setError("");
+      setAviso(`Monto de "${g.proveedor}" actualizado.`);
+      setEdicion(null);
+    } catch (err: unknown) {
+      setAviso("");
+      setError(err instanceof Error ? err.message : String(err));
+    }
   }
 
   const mios =
@@ -857,7 +878,7 @@ function Gastos() {
               <Celda>
                 <div className="flex flex-wrap gap-2">
                   {g.estatus === "Borrador" || g.estatus === "Devuelto para corrección" ? (
-                    <Boton onClick={() => enviarARevision(g)}>
+                    <Boton onClick={() => void enviarARevision(g)}>
                       {g.estatus === "Borrador" ? "Enviar a revisión" : "Reenviar a revisión"}
                     </Boton>
                   ) : null}
@@ -876,7 +897,7 @@ function Gastos() {
                         value={edicion.monto}
                         onChange={(e) => setEdicion({ id: g.id, monto: e.target.value })}
                       />
-                      <Boton onClick={() => guardarEdicion(g)}>Guardar</Boton>
+                      <Boton onClick={() => void guardarEdicion(g)}>Guardar</Boton>
                     </span>
                   ) : (
                     <Boton
@@ -902,19 +923,7 @@ function Gastos() {
                     {g.archivos.length ? (
                       g.archivos.map((a) => (
                         <li key={a.nombre}>
-                          {a.dataUrl ? (
-                            <a
-                              className="font-semibold underline"
-                              href={a.dataUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              download={a.nombre}
-                            >
-                              {a.nombre}
-                            </a>
-                          ) : (
-                            <span>{a.nombre} (documento de ejemplo)</span>
-                          )}
+                          <ArchivoEnlace archivo={a} />
                         </li>
                       ))
                     ) : (
