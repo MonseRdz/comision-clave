@@ -62,25 +62,38 @@ function Presupuestos() {
     );
   }
 
-  function asignar(ev: React.FormEvent) {
+  async function asignar(ev: React.FormEvent) {
     ev.preventDefault();
     const monto = Number(f.monto);
     if (!f.eventoId || !f.rubro || !f.responsableId) return setAviso("Completa todos los campos.");
     if (!Number.isFinite(monto) || monto <= 0) return setAviso("El monto debe ser mayor a cero.");
-    const p = { id: nuevoId("b"), eventoId: f.eventoId, rubro: f.rubro, monto, responsableId: f.responsableId };
-    setEstado((e) => ({ ...e, presupuestos: [...e.presupuestos, p] }));
     const evento = estado.eventos.find((e) => e.id === f.eventoId);
     const resp = estado.usuarios.find((u) => u.id === f.responsableId);
-    registrar(
-      "Asignación de presupuesto",
-      `${mxn(monto)} al rubro ${f.rubro} de ${evento?.nombre} bajo ${resp?.nombre}.`,
-    );
-    setAviso(`Asignados ${mxn(monto)} a "${f.rubro}" en ${evento?.nombre} — responsable ${resp?.nombre}.`);
-    setF({ ...f, monto: "" });
+    try {
+      const guardado = await insertarPresupuesto({
+        id: nuevoId("b"),
+        eventoId: f.eventoId,
+        rubro: f.rubro,
+        monto,
+        responsableId: f.responsableId,
+      });
+      setEstado((e) => ({ ...e, presupuestos: [...e.presupuestos, guardado] }));
+      await registrar(
+        "Asignación de presupuesto",
+        `${mxn(monto)} al rubro ${f.rubro} de ${evento?.nombre} bajo ${resp?.nombre}.`,
+      );
+      setError("");
+      setAviso(`Asignados ${mxn(monto)} a "${f.rubro}" en ${evento?.nombre} — responsable ${resp?.nombre}.`);
+      setF({ ...f, monto: "" });
+    } catch (err: unknown) {
+      setAviso("");
+      setError(err instanceof Error ? err.message : String(err));
+    }
   }
 
   return (
     <div className="grid gap-4 pt-4">
+      {error ? <Aviso tono="error">{error}</Aviso> : null}
       {aviso ? <Aviso>{aviso}</Aviso> : null}
       <Panel>
         <TituloPanel icono="i-hoop" sub="Monto por evento y rubro, con comisionado responsable.">
