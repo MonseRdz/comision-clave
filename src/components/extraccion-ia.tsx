@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useStore, hoyISO, nuevoId } from "@/lib/store";
+import { insertarAceptacion } from "@/lib/db";
 import { leerCFDI, FISCAL_VACIO, type Propuesta, type DatosFiscales } from "@/lib/cfdi";
 import { extraerComprobante, SERVICIO_IA } from "@/lib/extraccion.functions";
 import type { Archivo, IaExtraccion } from "@/lib/types";
@@ -37,23 +38,23 @@ export function ExtraccionIA({ onConfirmar }: { onConfirmar: (r: ResultadoConfir
     (a) => a.usuarioId === usuarioActual.id && a.version === VERSION_CONSENTIMIENTO,
   );
 
-  function aceptarConsentimiento() {
-    setEstado((e) => ({
-      ...e,
-      aceptaciones: [
-        ...e.aceptaciones,
-        {
-          id: nuevoId("ia"),
-          usuarioId: usuarioActual.id,
-          fecha: hoyISO(),
-          version: VERSION_CONSENTIMIENTO,
-        },
-      ],
-    }));
-    registrar(
-      "Consentimiento LFPDPPP (IA)",
-      `Aceptó el procesamiento de comprobantes por ${SERVICIO_IA} (${VERSION_CONSENTIMIENTO}).`,
-    );
+  async function aceptarConsentimiento() {
+    const registro = {
+      id: nuevoId("ia"),
+      usuarioId: usuarioActual.id,
+      fecha: hoyISO(),
+      version: VERSION_CONSENTIMIENTO,
+    };
+    try {
+      const guardado = await insertarAceptacion(registro);
+      setEstado((e) => ({ ...e, aceptaciones: [...e.aceptaciones, guardado] }));
+      await registrar(
+        "Consentimiento LFPDPPP (IA)",
+        `Aceptó el procesamiento de comprobantes por ${SERVICIO_IA} (${VERSION_CONSENTIMIENTO}).`,
+      );
+    } catch (err: unknown) {
+      setMensaje(err instanceof Error ? err.message : String(err));
+    }
   }
 
   async function procesar(lista: FileList | null) {
@@ -91,7 +92,7 @@ export function ExtraccionIA({ onConfirmar }: { onConfirmar: (r: ResultadoConfir
           data: {
             nombre: file.name,
             tipo: file.type,
-            dataUrl: leido.dataUrl,
+            dataUrl: leido.dataUrl ?? "",
             rubros: estado.rubros,
             proveedores: estado.proveedores,
           },
