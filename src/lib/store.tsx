@@ -9,15 +9,21 @@ import {
   type ReactNode,
 } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { cargarDatos, cargarPerfiles, instantanea, sincronizar, type Instantanea, type Perfil } from "./db";
+import { cargarDatos, cargarPerfiles, insertarBitacora, cargarGastosPorEstatus, type Perfil } from "./db";
 import type { Estado, Gasto, Rol, Usuario } from "./types";
 
 export type Acceso = "cargando" | "anonimo" | "pendiente" | "activo";
 
 type Ctx = {
   estado: Estado;
+  /** Solo actualiza la copia en memoria. Toda escritura va antes a la base. */
   setEstado: (fn: (e: Estado) => Estado) => void;
-  registrar: (accion: string, detalle: string) => void;
+  /** Asienta la bitácora en la base y la refleja en pantalla. */
+  registrar: (accion: string, detalle: string) => Promise<void>;
+  /** Refresca los gastos desde la base (fuente de verdad). */
+  recargarGastos: () => Promise<void>;
+  /** Refleja en memoria un gasto ya escrito y releído de la base. */
+  aplicarGasto: (g: Gasto) => void;
   usuarioActual: Usuario;
   puedeAprobar: boolean;
   delegacionVigente: Estado["delegaciones"][number] | undefined;
@@ -80,6 +86,15 @@ const aUsuario = (p: Perfil): Usuario => ({
   activo: p.estatus === "Aprobado",
 });
 
+const TODOS_ESTATUS: Gasto["estatus"][] = [
+  "Borrador",
+  "Registrado",
+  "Validado por Revisor",
+  "Devuelto para corrección",
+  "Aprobado",
+  "Rechazado",
+];
+
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [estado, setEstadoRaw] = useState<Estado>(estadoVacio);
   const [perfiles, setPerfiles] = useState<Perfil[]>([]);
@@ -87,8 +102,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [listo, setListo] = useState(false);
   const [correoSesion, setCorreoSesion] = useState("");
   const [errorSync, setErrorSync] = useState("");
-  const snapRef = useRef<Instantanea>({});
-  const colaRef = useRef<Promise<unknown>>(Promise.resolve());
   const usuarioIdRef = useRef<string>("");
 
   const cargar = useCallback(async () => {
@@ -118,13 +131,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
 
     const datos = await cargarDatos();
-    const nuevo: Estado = {
+    setEstadoRaw({
       ...datos,
       usuarios: lista.filter((p) => p.rol).map(aUsuario),
       usuarioActualId: user.id,
-    };
-    snapRef.current = instantanea(nuevo);
-    setEstadoRaw(nuevo);
+    });
     setAcceso("activo");
     setListo(true);
   }, []);
@@ -140,40 +151,67 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, [cargar]);
 
-  // Persistencia incremental: solo se escribe lo que cambió.
-  useEffect(() => {
-    if (!listo || acceso !== "activo") return;
-    colaRef.current = colaRef.current
-      .then(async () => {
-        snapRef.current = await sincronizar(estado, snapRef.current);
-        setErrorSync("");
-      })
-      .catch((e: unknown) => {
-        const msg = e instanceof Error ? e.message : String(e);
-        setErrorSync(`No se pudo guardar en el servidor. ${msg}`);
-      });
-  }, [estado, listo, acceso]);
-
   const setEstado = useCallback((fn: (e: Estado) => Estado) => setEstadoRaw((e) => fn(e)), []);
 
-  const registrar = useCallback((accion: string, detalle: string) => {
+  const recargarGastos = useCallback(async () => {
+    try {
+      const gastos = await cargarGastosPorEstatus(TODOS_ESTATUS);
+      setEstadoRaw((e) => ({ ...e, gastos }));
+      setErrorSync("");
+    } catch (e: unknown) {
+      setErrorSync(e instanceof Error ? e.message : String(e));
+    }
+  }, []);
+
+  const aplicarGasto = useCallback((g: Gasto) => {
+    setEstadoRaw((e) => ({
+      ...e,
+      gastos: e.gastos.some((x) => x.id === g.id)
+        ? e.gastos.map((x) => (x.id === g.id ? g : x))
+        : [g, ...e.gastos],
+    }));
+  }, []);
+
+  // Actualizaciones en vivo de gastos + refresco al volver a la pantalla.
+  useEffect(() => {
+    if (acceso !== "activo") return;
+    const canal = supabase
+      .channel("gastos-en-vivo")
+      .on("postgres_changes", { event: "*", schema: "public", table: "gastos" }, () => {
+        void recargarGastos();
+      })
+      .subscribe();
+    const alEnfocar = () => void recargarGastos();
+    window.addEventListener("focus", alEnfocar);
+    return () => {
+      window.removeEventListener("focus", alEnfocar);
+      void supabase.removeChannel(canal);
+    };
+  }, [acceso, recargarGastos]);
+
+  const registrar = useCallback(async (accion: string, detalle: string) => {
+    const uid = usuarioIdRef.current;
+    if (!uid) return;
+    let actor = "Sistema";
     setEstadoRaw((e) => {
-      const actor = e.usuarios.find((u) => u.id === e.usuarioActualId);
-      return {
-        ...e,
-        bitacora: [
-          {
-            id: `l${Date.now()}${Math.random().toString(16).slice(2, 6)}`,
-            fecha: hoyISO(),
-            actor: actor ? `${actor.nombre} (${actor.rol})` : "Sistema",
-            actor_id: e.usuarioActualId,
-            accion,
-            detalle,
-          },
-          ...e.bitacora,
-        ],
-      };
+      const u = e.usuarios.find((x) => x.id === uid);
+      if (u) actor = `${u.nombre} (${u.rol})`;
+      return e;
     });
+    try {
+      const fila = await insertarBitacora({
+        id: `l${Date.now()}${Math.random().toString(16).slice(2, 6)}`,
+        fecha: hoyISO(),
+        actor,
+        actor_id: uid,
+        accion,
+        detalle,
+      });
+      setEstadoRaw((e) => ({ ...e, bitacora: [fila, ...e.bitacora] }));
+      setErrorSync("");
+    } catch (e: unknown) {
+      setErrorSync(e instanceof Error ? e.message : String(e));
+    }
   }, []);
 
   const cerrarSesion = useCallback(async () => {
@@ -200,6 +238,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         estado,
         setEstado,
         registrar,
+        recargarGastos,
+        aplicarGasto,
         usuarioActual,
         puedeAprobar,
         delegacionVigente: delegacion,
