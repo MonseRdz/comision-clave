@@ -1,7 +1,9 @@
 import { rutaTexto } from "@/lib/paises";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useStore, mxn, fechaCorta, diasDesde } from "@/lib/store";
+import { actualizarGasto, cargarGastosPorEstatus } from "@/lib/db";
+import { ArchivoEnlace } from "@/components/archivo-enlace";
 import type { Gasto } from "@/lib/types";
 import {
   Panel,
@@ -34,9 +36,11 @@ export const Route = createFileRoute("/revision")({
 });
 
 function Revision() {
-  const { estado, setEstado, registrar, usuarioActual } = useStore();
+  const { estado, aplicarGasto, registrar, usuarioActual } = useStore();
   const [obs, setObs] = useState<Record<string, string>>({});
   const [aviso, setAviso] = useState("");
+  const [error, setError] = useState("");
+  const [pendientes, setPendientes] = useState<Gasto[]>([]);
 
   if (usuarioActual.rol !== "Revisor") {
     return (
@@ -47,23 +51,48 @@ function Revision() {
     );
   }
 
-  const pendientes = estado.gastos.filter(
-    (g) => g.estatus === "Registrado" || g.estatus === "Devuelto para corrección",
-  );
+  // La consola consulta solo lo que necesita: gastos presentados o devueltos.
+  useEffect(() => {
+    let vivo = true;
+    const traer = () =>
+      cargarGastosPorEstatus(["Registrado", "Devuelto para corrección"])
+        .then((lista) => {
+          if (vivo) setPendientes(lista);
+        })
+        .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
+    void traer();
+    window.addEventListener("focus", traer);
+    return () => {
+      vivo = false;
+      window.removeEventListener("focus", traer);
+    };
+  }, [estado.gastos]);
 
-  function actualizar(g: Gasto, estatus: Gasto["estatus"], observaciones: string, texto: string) {
-    setEstado((e) => ({
-      ...e,
-      gastos: e.gastos.map((x) =>
-        x.id === g.id ? { ...x, estatus, observaciones, revisorId: usuarioActual.id } : x,
-      ),
-    }));
-    registrar("Dictamen técnico", texto);
-    setAviso(texto);
+  async function actualizar(g: Gasto, estatus: Gasto["estatus"], observaciones: string, texto: string) {
+    try {
+      const guardado = await actualizarGasto(g.id, {
+        estatus,
+        observaciones,
+        revisor_id: usuarioActual.id,
+      });
+      aplicarGasto(guardado);
+      setPendientes((lista) =>
+        estatus === "Registrado" || estatus === "Devuelto para corrección"
+          ? lista.map((x) => (x.id === guardado.id ? guardado : x))
+          : lista.filter((x) => x.id !== guardado.id),
+      );
+      await registrar("Dictamen técnico", texto);
+      setError("");
+      setAviso(texto);
+    } catch (err: unknown) {
+      setAviso("");
+      setError(err instanceof Error ? err.message : String(err));
+    }
   }
 
   return (
     <div className="grid gap-4 pt-4">
+      {error ? <Aviso tono="error">{error}</Aviso> : null}
       {aviso ? <Aviso>{aviso}</Aviso> : null}
       <Panel>
         <TituloPanel sub="Revisión de primer nivel: envía al Contralor o devuelve al comisionado.">
@@ -95,19 +124,7 @@ function Revision() {
                     <ul className="space-y-1">
                       {g.archivos.map((a) => (
                         <li key={a.nombre}>
-                          {a.dataUrl ? (
-                            <a
-                              className="font-semibold underline"
-                              href={a.dataUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              download={a.nombre}
-                            >
-                              Ver o descargar {a.nombre}
-                            </a>
-                          ) : (
-                            <span>{a.nombre} (documento de ejemplo)</span>
-                          )}
+                          <ArchivoEnlace archivo={a} etiqueta={`Ver o descargar ${a.nombre}`} />
                         </li>
                       ))}
                     </ul>
