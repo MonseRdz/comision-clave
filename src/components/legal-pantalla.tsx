@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { insertarAceptacion } from "@/lib/db";
 import { useStore, hoyISO, nuevoId, fechaHora } from "@/lib/store";
 import { AVISO_PRIVACIDAD, TERMINOS, VERSION_LEGAL } from "@/lib/legal";
 import { descargarComprobanteLegal } from "@/lib/comprobante-legal";
@@ -65,6 +67,7 @@ export function LegalPantalla() {
 
   return (
     <div className="mx-auto max-w-3xl pt-4">
+      {error ? <Aviso tono="error">{error}</Aviso> : null}
       <div className="mb-4">
         <Panel>
           <TituloPanel sub={`Versión ${VERSION_LEGAL} · Lectura y aceptación obligatoria para todos los roles`}>
