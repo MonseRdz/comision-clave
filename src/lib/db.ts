@@ -32,12 +32,12 @@ export const MAX_ARCHIVO_MB = 10;
 
 // El cliente generado tipa cada tabla; estas mutaciones se arman en tiempo de
 // ejecución, así que se usa una vista dinámica del mismo cliente.
-type Respuesta = Promise<{ data: unknown; error: { message: string } | null }>;
-type Constructor = {
-  select: (cols?: string) => Constructor & { single: () => Respuesta; maybeSingle: () => Respuesta };
+type Resultado = { data: unknown; error: { message: string } | null };
+type Respuesta = PromiseLike<Resultado>;
+type Constructor = Respuesta & {
+  select: (cols?: string) => Constructor;
   insert: (fila: Fila | Fila[]) => Constructor;
   update: (fila: Fila) => Constructor;
-  upsert: (fila: Fila, opciones?: { onConflict: string }) => Constructor;
   delete: () => Constructor;
   eq: (col: string, valor: unknown) => Constructor;
   in: (col: string, valores: unknown[]) => Constructor;
