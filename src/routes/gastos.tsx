@@ -5,7 +5,9 @@ import { useStore, mxn, nuevoId, fechaCorta, esInmutable, hoyISO } from "@/lib/s
 import type { Archivo, Escala, Gasto, IaExtraccion, TipoComprobante } from "@/lib/types";
 import { TIPOS_COMPROBANTE } from "@/lib/types";
 import { PAISES, rutaTexto } from "@/lib/paises";
-import { buscarDuplicado, gastoRepetido, mensajeDuplicado } from "@/lib/duplicados";
+import { buscarDuplicado, gastoRepetido, huellaArchivo, mensajeDuplicado } from "@/lib/duplicados";
+import { actualizarGasto, borrarArchivos, insertarGasto, subirArchivos, MAX_ARCHIVO_MB } from "@/lib/db";
+import { ArchivoEnlace } from "@/components/archivo-enlace";
 
 import { ExtraccionIA } from "@/components/extraccion-ia";
 
@@ -53,7 +55,8 @@ const tonoEstatus = (e: Gasto["estatus"]) =>
           : "neutro";
 
 function Gastos() {
-  const { estado, setEstado, registrar, usuarioActual } = useStore();
+  const { estado, setEstado, aplicarGasto, registrar, usuarioActual } = useStore();
+  const [guardando, setGuardando] = useState(false);
   const [f, setF] = useState({
     eventoId: estado.eventos[0]?.id ?? "",
     rubro: estado.rubros[0] ?? "",
@@ -97,19 +100,22 @@ function Gastos() {
   const tc = f.moneda === "MXN" ? 1 : Number(f.tipoCambio) || 0;
   const montoMXN = convertirMoneda(monto, tc);
 
-  function leerArchivo(file: File): Promise<Archivo> {
-    return new Promise<Archivo>((resolve) => {
+  async function leerArchivo(file: File): Promise<Archivo> {
+    const leido = await new Promise<Archivo>((resolve) => {
       const reader = new FileReader();
       reader.onload = () =>
         resolve({ nombre: file.name, tipo: file.type || "archivo", dataUrl: String(reader.result) });
       reader.onerror = () => resolve({ nombre: file.name, tipo: file.type || "archivo", dataUrl: "" });
       reader.readAsDataURL(file);
     });
+    return { ...leido, hash: await huellaArchivo(leido) };
   }
 
   async function cargarPase(participanteId: string, lista: FileList | null) {
     const file = lista?.[0];
     if (!file) return;
+    if (file.size > MAX_ARCHIVO_MB * 1024 * 1024)
+      return setError(`El archivo "${file.name}" excede ${MAX_ARCHIVO_MB} MB.`);
     const leido = await leerArchivo(file);
     const otros = [
       ...archivos,
@@ -129,18 +135,12 @@ function Gastos() {
 
   async function cargarArchivos(lista: FileList | null) {
     if (!lista) return;
-    const leidos = await Promise.all(
-      Array.from(lista).map(
-        (file) =>
-          new Promise<Archivo>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () =>
-              resolve({ nombre: file.name, tipo: file.type || "archivo", dataUrl: String(reader.result) });
-            reader.onerror = () => resolve({ nombre: file.name, tipo: file.type || "archivo", dataUrl: "" });
-            reader.readAsDataURL(file);
-          }),
-      ),
-    );
+    const grandes = Array.from(lista).filter((f) => f.size > MAX_ARCHIVO_MB * 1024 * 1024);
+    if (grandes.length)
+      return setError(
+        `Estos archivos exceden ${MAX_ARCHIVO_MB} MB: ${grandes.map((f) => f.name).join(", ")}.`,
+      );
+    const leidos = await Promise.all(Array.from(lista).map((file) => leerArchivo(file)));
     const aceptados: Archivo[] = [];
     for (const a of leidos) {
       const dup = await buscarDuplicado([a], estado.gastos);

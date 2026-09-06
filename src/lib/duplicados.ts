@@ -24,6 +24,7 @@ export async function huellaTexto(texto: string): Promise<string> {
 }
 
 export async function huellaArchivo(a: Archivo): Promise<string> {
+  if (a.hash) return a.hash;
   const base = a.dataUrl && a.dataUrl.length > 0 ? a.dataUrl : `${a.nombre}|${a.tipo}`;
   return huellaTexto(base);
 }
