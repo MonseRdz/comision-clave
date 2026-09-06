@@ -38,22 +38,29 @@ export function DocumentosLegales() {
 
 export function LegalPantalla() {
   const { estado, setEstado, registrar, usuarioActual } = useStore();
+  const [error, setError] = useState("");
   const aceptacion = estado.aceptaciones.find(
     (a) => a.usuarioId === usuarioActual.id && a.version === VERSION_LEGAL,
   );
 
-  function aceptar() {
+  async function aceptar() {
     const registro = {
       id: nuevoId("lg"),
       usuarioId: usuarioActual.id,
       fecha: hoyISO(),
       version: VERSION_LEGAL,
     };
-    setEstado((e) => ({ ...e, aceptaciones: [...e.aceptaciones, registro] }));
-    registrar(
-      "Aceptación de aviso de privacidad y términos",
-      `${usuarioActual.nombre} aceptó el Aviso de Privacidad y los Términos y Condiciones ${VERSION_LEGAL} el ${fechaHora(registro.fecha)}.`,
-    );
+    try {
+      const guardado = await insertarAceptacion(registro);
+      setEstado((e) => ({ ...e, aceptaciones: [...e.aceptaciones, guardado] }));
+      await registrar(
+        "Aceptación de aviso de privacidad y términos",
+        `${usuarioActual.nombre} aceptó el Aviso de Privacidad y los Términos y Condiciones ${VERSION_LEGAL} el ${fechaHora(guardado.fecha)}.`,
+      );
+      setError("");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
   }
 
   return (
