@@ -15,7 +15,6 @@ import { Route as AprobacionRouteImport } from './routes/aprobacion'
 import { Route as EventosRouteImport } from './routes/eventos'
 import { Route as GastosRouteImport } from './routes/gastos'
 import { Route as LegalRouteImport } from './routes/legal'
-import { Route as PresupuestosRouteImport } from './routes/presupuestos'
 import { Route as ReglasRouteImport } from './routes/reglas'
 import { Route as ReportesRouteImport } from './routes/reportes'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -52,11 +51,6 @@ const LegalRoute = LegalRouteImport.update({
   path: '/legal',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PresupuestosRoute = PresupuestosRouteImport.update({
-  id: '/presupuestos',
-  path: '/presupuestos',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ReglasRoute = ReglasRouteImport.update({
   id: '/reglas',
   path: '/reglas',
@@ -91,7 +85,6 @@ export interface FileRoutesByFullPath {
   '/eventos': typeof EventosRoute
   '/gastos': typeof GastosRoute
   '/legal': typeof LegalRoute
-  '/presupuestos': typeof PresupuestosRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -105,7 +98,6 @@ export interface FileRoutesByTo {
   '/eventos': typeof EventosRoute
   '/gastos': typeof GastosRoute
   '/legal': typeof LegalRoute
-  '/presupuestos': typeof PresupuestosRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -120,7 +112,6 @@ export interface FileRoutesById {
   '/eventos': typeof EventosRoute
   '/gastos': typeof GastosRoute
   '/legal': typeof LegalRoute
-  '/presupuestos': typeof PresupuestosRoute
   '/reglas': typeof ReglasRoute
   '/reportes': typeof ReportesRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -136,7 +127,6 @@ export interface FileRouteTypes {
     | '/eventos'
     | '/gastos'
     | '/legal'
-    | '/presupuestos'
     | '/reglas'
     | '/reportes'
     | '/reset-password'
@@ -150,7 +140,6 @@ export interface FileRouteTypes {
     | '/eventos'
     | '/gastos'
     | '/legal'
-    | '/presupuestos'
     | '/reglas'
     | '/reportes'
     | '/reset-password'
@@ -164,7 +153,6 @@ export interface FileRouteTypes {
     | '/eventos'
     | '/gastos'
     | '/legal'
-    | '/presupuestos'
     | '/reglas'
     | '/reportes'
     | '/reset-password'
@@ -179,7 +167,6 @@ export interface RootRouteChildren {
   EventosRoute: typeof EventosRoute
   GastosRoute: typeof GastosRoute
   LegalRoute: typeof LegalRoute
-  PresupuestosRoute: typeof PresupuestosRoute
   ReglasRoute: typeof ReglasRoute
   ReportesRoute: typeof ReportesRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -231,13 +218,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LegalRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/presupuestos': {
-      id: '/presupuestos'
-      path: '/presupuestos'
-      fullPath: '/presupuestos'
-      preLoaderRoute: typeof PresupuestosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/reglas': {
       id: '/reglas'
       path: '/reglas'
@@ -283,7 +263,6 @@ const rootRouteChildren: RootRouteChildren = {
   EventosRoute: EventosRoute,
   GastosRoute: GastosRoute,
   LegalRoute: LegalRoute,
-  PresupuestosRoute: PresupuestosRoute,
   ReglasRoute: ReglasRoute,
   ReportesRoute: ReportesRoute,
   ResetPasswordRoute: ResetPasswordRoute,
