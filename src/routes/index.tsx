@@ -56,7 +56,7 @@ function Tablero() {
   const asignado = estado.presupuestos.reduce((s, p) => suma(s, p.monto), 0);
   const comprobado = estado.gastos
     .filter(cuentaComprobado)
-    .reduce((s, g) => suma(s, g.montoMXN), 0);
+    .reduce((s, g) => suma(s, montoComprobable(g)), 0);
   const disponible = resta(asignado, comprobado);
   const pct = asignado ? Math.round((comprobado / asignado) * 100) : 0;
 
@@ -76,10 +76,14 @@ function Tablero() {
   // Composición del presupuesto ejercido (sin borradores).
   const noBorrador = estado.gastos.filter((g) => !esBorrador(g));
   const aprobadoTotal = comprobado;
+  const capturados = noBorrador.filter((g) => cuentaComprobado(g) || cuentaEnDictamen(g));
   const dictamenTotal = noBorrador
     .filter(cuentaEnDictamen)
-    .reduce((s, g) => suma(s, g.montoMXN), 0);
-  const sinComprobar = Math.max(0, resta(resta(asignado, aprobadoTotal), dictamenTotal));
+    .reduce((s, g) => suma(s, montoComprobable(g)), 0);
+  // Importe capturado sin evidencia suficiente (pases de abordar faltantes).
+  const faltaPases = capturados.reduce((s, g) => suma(s, pendientePorEvidencia(g)), 0);
+  const capturadoTotal = capturados.reduce((s, g) => suma(s, g.montoMXN), 0);
+  const sinComprobar = Math.max(0, resta(asignado, capturadoTotal));
 
   // 7.2 Etapas del flujo.
   const etapas = [
