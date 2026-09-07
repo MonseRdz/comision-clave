@@ -77,7 +77,9 @@ function Gastos() {
   const [escalas, setEscalas] = useState<Escala[]>([]);
   const [participantes, setParticipantes] = useState<string[]>([]);
   const [archivos, setArchivos] = useState<Archivo[]>([]);
-  const [pases, setPases] = useState<Record<string, Archivo>>({});
+  const [pases, setPases] = useState<Record<string, { Ida?: Archivo; Regreso?: Archivo }>>({});
+  const [importes, setImportes] = useState<Record<string, string>>({});
+
   const [aviso, setAviso] = useState("");
   const [error, setError] = useState("");
   const [iaMeta, setIaMeta] = useState<IaExtraccion | null>(null);
@@ -93,12 +95,27 @@ function Gastos() {
   const esExtranjero = f.tipoComprobante === "Comprobante extranjero";
   const esSinComprobante = f.tipoComprobante === "Sin comprobante fiscal";
   const nominales = evento?.participantes ?? [];
-  const faltanPases = esTransporte ? nominales.filter((p) => !pases[p.id]) : [];
   const monto = Number(f.monto) || 0;
   const subtotalNum = f.subtotal.trim() === "" ? null : Number(f.subtotal);
   const ivaNum = f.iva.trim() === "" ? null : Number(f.iva);
   const tc = f.moneda === "MXN" ? 1 : Number(f.tipoCambio) || 0;
   const montoMXN = convertirMoneda(monto, tc);
+  const viajerosSel = esTransporte ? participantes : [];
+  const repartoBase = repartoUniforme(montoMXN, viajerosSel);
+  const importeDe = (id: string) => {
+    const t = importes[id];
+    if (t !== undefined && t.trim() !== "") return Number(t) || 0;
+    return repartoBase.find((v) => v.participanteId === id)?.importe ?? 0;
+  };
+  const viajeros: Viajero[] = viajerosSel.map((id) => ({
+    participanteId: id,
+    importe: importeDe(id),
+  }));
+  const sumaIndividual = sumaViajeros(viajeros);
+  const diferenciaReparto = redondear(resta(montoMXN, sumaIndividual));
+  const faltanPases = viajerosSel.filter((id) => !pases[id]?.Ida || !pases[id]?.Regreso);
+  const nombreDe = (id: string) => nominales.find((p) => p.id === id)?.nombre ?? id;
+
 
   async function leerArchivo(file: File): Promise<Archivo> {
     const leido = await new Promise<Archivo>((resolve) => {
@@ -111,7 +128,11 @@ function Gastos() {
     return { ...leido, hash: await huellaArchivo(leido) };
   }
 
-  async function cargarPase(participanteId: string, lista: FileList | null) {
+  async function cargarPase(
+    participanteId: string,
+    tramo: "Ida" | "Regreso",
+    lista: FileList | null,
+  ) {
     const file = lista?.[0];
     if (!file) return;
     if (file.size > MAX_ARCHIVO_MB * 1024 * 1024)
@@ -119,9 +140,11 @@ function Gastos() {
     const leido = await leerArchivo(file);
     const otros = [
       ...archivos,
-      ...Object.entries(pases)
-        .filter(([k]) => k !== participanteId)
-        .map(([, a]) => a),
+      ...Object.entries(pases).flatMap(([k, v]) =>
+        [v.Ida, v.Regreso].filter(
+          (a): a is Archivo => Boolean(a) && !(k === participanteId && a?.tramo === tramo),
+        ),
+      ),
     ];
     const dup = await buscarDuplicado([leido], estado.gastos);
     const dupLocal = await buscarDuplicado([leido, ...otros], []);
@@ -130,8 +153,12 @@ function Gastos() {
       return;
     }
     setError("");
-    setPases((prev) => ({ ...prev, [participanteId]: { ...leido, participanteId } }));
+    setPases((prev) => ({
+      ...prev,
+      [participanteId]: { ...prev[participanteId], [tramo]: { ...leido, participanteId, tramo } },
+    }));
   }
+
 
   async function cargarArchivos(lista: FileList | null) {
     if (!lista) return;
