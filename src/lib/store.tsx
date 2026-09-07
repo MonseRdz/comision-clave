@@ -11,6 +11,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { cargarDatos, cargarPerfiles, insertarBitacora, cargarGastosPorEstatus, type Perfil } from "./db";
 import type { Estado, Gasto, Rol, Usuario } from "./types";
+import { comprobadoDe, pendienteDe } from "./transporte";
 
 export type Acceso = "cargando" | "anonimo" | "pendiente" | "activo";
 
@@ -282,6 +283,16 @@ export const esBorrador = (g: Gasto) => g.estatus === "Borrador";
 
 /** Criterio estricto: solo lo dictaminado y aprobado cuenta como comprobado. */
 export const cuentaComprobado = (g: Gasto) => g.estatus === "Aprobado";
+
+/**
+ * Monto del gasto respaldado con evidencia suficiente. Fuera de Transporte es
+ * el total; en Transporte solo la parte de los viajeros con pase de ida y de
+ * regreso, y cero si no hay factura que ampare el total.
+ */
+export const montoComprobable = comprobadoDe;
+
+/** Parte del gasto sin evidencia suficiente (pases faltantes o sin factura). */
+export const pendientePorEvidencia = pendienteDe;
 
 /** Gastos presentados y en proceso de dictamen (no comprobados todavía). */
 export const cuentaEnDictamen = (g: Gasto) =>
