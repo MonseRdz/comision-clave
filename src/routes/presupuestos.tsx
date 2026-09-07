@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { resta, suma } from "@/lib/dinero";
 import { useState } from "react";
-import { useStore, mxn, nuevoId, cuentaComprobado } from "@/lib/store";
+import { useStore, mxn, nuevoId, cuentaComprobado, montoComprobable } from "@/lib/store";
 import { insertarPresupuesto } from "@/lib/db";
 import {
   Panel,
@@ -154,7 +154,7 @@ function Presupuestos() {
           {estado.presupuestos.map((p) => {
             const comprobado = estado.gastos
               .filter((g) => g.eventoId === p.eventoId && g.rubro === p.rubro && cuentaComprobado(g))
-              .reduce((s, g) => suma(s, g.montoMXN), 0);
+              .reduce((s, g) => suma(s, montoComprobable(g)), 0);
             return (
               <tr key={p.id}>
                 <Celda>{estado.eventos.find((e) => e.id === p.eventoId)?.nombre}</Celda>
