@@ -58,13 +58,23 @@ function Reportes() {
           Reporte de avance
         </TituloPanel>
         <Tabla
-          cabeceras={["Evento", "% comprobado", "Pend. de comprobar", "Comisionados pendientes", "Días de atraso máximo"]}
+          cabeceras={[
+            "Evento",
+            "% comprobado",
+            "Pend. de comprobar",
+            "Falta de pases",
+            "Comisionados pendientes",
+            "Días de atraso máximo",
+          ]}
           vacio="Aún no hay eventos registrados."
         >
           {estado.eventos.map((ev) => {
             const asig = estado.presupuestos.filter((p) => p.eventoId === ev.id).reduce((s, p) => suma(s, p.monto), 0);
             const gs = estado.gastos.filter((g) => g.eventoId === ev.id && !esBorrador(g));
-            const comp = gs.filter(cuentaComprobado).reduce((s, g) => suma(s, g.montoMXN), 0);
+            const comp = gs.filter(cuentaComprobado).reduce((s, g) => suma(s, montoComprobable(g)), 0);
+            const pases = gs
+              .filter((g) => cuentaComprobado(g) || cuentaEnDictamen(g))
+              .reduce((s, g) => suma(s, pendientePorEvidencia(g)), 0);
             const pend = gs.filter(estaPendiente);
             const nombres = [
               ...new Set(pend.map((g) => estado.usuarios.find((u) => u.id === g.comisionadoId)?.nombre ?? "—")),
@@ -80,6 +90,7 @@ function Reportes() {
                 </Celda>
                 <Celda>{asig ? Math.round((comp / asig) * 100) : 0}%</Celda>
                 <Celda>{mxn(resta(asig, comp))}</Celda>
+                <Celda>{mxn(pases)}</Celda>
                 <Celda>{nombres.join(", ") || "Ninguno"}</Celda>
                 <Celda>
                   <Etiqueta tono={atraso > 7 ? "error" : atraso >= 3 ? "alerta" : "ok"}>{atraso} días</Etiqueta>
