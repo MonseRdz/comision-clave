@@ -7,6 +7,8 @@ import {
   cuentaEnDictamen,
   estaPendiente,
   esBorrador,
+  montoComprobable,
+  pendientePorEvidencia,
 } from "@/lib/store";
 import { Panel, TituloPanel, Etiqueta, Aviso, Tabla, Celda } from "@/components/glass";
 import { resta, suma } from "@/lib/dinero";
