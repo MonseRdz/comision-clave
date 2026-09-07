@@ -1,13 +1,15 @@
 import { useMemo, useState } from "react";
 import { mxn, useStore } from "@/lib/store";
-import { convertirMoneda, redondear, resta } from "@/lib/dinero";
+import { convertirMoneda, redondear, resta, suma as suma2 } from "@/lib/dinero";
 import { actualizarGasto, borrarArchivos, subirArchivos, MAX_ARCHIVO_MB } from "@/lib/db";
 import { huellaArchivo } from "@/lib/duplicados";
 import { esGastoTransporte, repartoUniforme, sumaViajeros } from "@/lib/transporte";
 import type { Archivo, Gasto, TipoComprobante, Viajero } from "@/lib/types";
 import { TIPOS_COMPROBANTE } from "@/lib/types";
 import { ArchivoEnlace } from "@/components/archivo-enlace";
+import { ResumenComprobacion } from "@/components/desglose-viajeros";
 import { Aviso, Boton, Campo, Entrada, Etiqueta, Panel, Selector, TituloPanel } from "@/components/glass";
+
 
 type Tramo = "Ida" | "Regreso";
 type Pases = Record<string, { Ida?: Archivo | undefined; Regreso?: Archivo | undefined }>;
@@ -335,7 +337,39 @@ export function EditarComprobacion({
         </Campo>
       </div>
 
+      {(() => {
+        const conFactura =
+          datos.tipoComprobante !== "Sin comprobante fiscal" && facturas.length > 0;
+        let comprobado = 0;
+        let pendiente = 0;
+        for (const id of ids) {
+          const importe = Number(importes[id]) || 0;
+          const completo = Boolean(pases[id]?.Ida && pases[id]?.Regreso) && conFactura;
+          if (completo) comprobado = suma2(comprobado, importe);
+          else pendiente = suma2(pendiente, importe);
+        }
+        return (
+          <div className="mt-3">
+            <ResumenComprobacion
+              comprobado={redondear(comprobado)}
+              pendiente={redondear(pendiente)}
+              total={redondear(suma2(comprobado, pendiente))}
+            />
+            {!conFactura && ids.length ? (
+              <p className="mt-1 text-xs font-semibold text-warning">
+                Sin factura que ampare el total: todo el gasto queda pendiente de comprobar.
+              </p>
+            ) : null}
+            <p className="mt-1 text-xs text-muted-foreground">
+              Un viajero cuenta como comprobado solo con pase de ida y de regreso; un solo tramo no
+              comprueba nada y no se prorratea.
+            </p>
+          </div>
+        );
+      })()}
+
       {ids.length === 0 ? (
+
         <p className="mt-3 text-sm text-muted-foreground">
           Este gasto no tiene viajeros seleccionados.
         </p>

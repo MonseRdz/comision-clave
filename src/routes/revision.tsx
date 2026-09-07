@@ -112,7 +112,21 @@ function Revision() {
                     {comisionado?.nombre}
                   </p>
                 </Celda>
-                <Celda>{mxn(g.montoMXN)}</Celda>
+                <Celda>
+                  {mxn(g.montoMXN)}
+                  {esGastoTransporte(g) ? (
+                    <p className="mt-1 text-xs">
+                      <span className="font-semibold text-success">
+                        Comprobado {mxn(comprobadoDe(g))}
+                      </span>
+                      <br />
+                      <span className="font-semibold text-warning">
+                        Pendiente {mxn(pendienteDe(g))}
+                      </span>
+                    </p>
+                  ) : null}
+                </Celda>
+
                 <Celda>
                   {fechaCorta(g.creadoEn)}
                   <br />

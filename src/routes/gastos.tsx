@@ -968,7 +968,21 @@ function Gastos() {
                 {g.monto.toLocaleString("es-MX")} {g.moneda}
                 {g.moneda !== "MXN" ? ` × ${g.tipoCambio}` : ""}
               </Celda>
-              <Celda>{mxn(g.montoMXN)}</Celda>
+              <Celda>
+                {mxn(g.montoMXN)}
+                {esGastoTransporte(g) ? (
+                  <p className="mt-1 text-xs">
+                    <span className="font-semibold text-success">
+                      Comprobado {mxn(comprobadoDe(g))}
+                    </span>
+                    <br />
+                    <span className="font-semibold text-warning">
+                      Pendiente {mxn(pendienteDe(g))}
+                    </span>
+                  </p>
+                ) : null}
+              </Celda>
+
               <Celda>
                 <Etiqueta tono="neutro">{g.tipoComprobante}</Etiqueta>
                 {g.tipoComprobante === "Sin comprobante fiscal" && g.justificacion ? (
