@@ -7,6 +7,8 @@ import {
   cuentaEnDictamen,
   estaPendiente,
   esBorrador,
+  montoComprobable,
+  pendientePorEvidencia,
 } from "@/lib/store";
 import { Panel, TituloPanel, Etiqueta, Aviso, Tabla, Celda } from "@/components/glass";
 import { resta, suma } from "@/lib/dinero";
@@ -56,7 +58,7 @@ function Tablero() {
   const asignado = estado.presupuestos.reduce((s, p) => suma(s, p.monto), 0);
   const comprobado = estado.gastos
     .filter(cuentaComprobado)
-    .reduce((s, g) => suma(s, g.montoMXN), 0);
+    .reduce((s, g) => suma(s, montoComprobable(g)), 0);
   const disponible = resta(asignado, comprobado);
   const pct = asignado ? Math.round((comprobado / asignado) * 100) : 0;
 
@@ -76,10 +78,14 @@ function Tablero() {
   // Composición del presupuesto ejercido (sin borradores).
   const noBorrador = estado.gastos.filter((g) => !esBorrador(g));
   const aprobadoTotal = comprobado;
+  const capturados = noBorrador.filter((g) => cuentaComprobado(g) || cuentaEnDictamen(g));
   const dictamenTotal = noBorrador
     .filter(cuentaEnDictamen)
-    .reduce((s, g) => suma(s, g.montoMXN), 0);
-  const sinComprobar = Math.max(0, resta(resta(asignado, aprobadoTotal), dictamenTotal));
+    .reduce((s, g) => suma(s, montoComprobable(g)), 0);
+  // Importe capturado sin evidencia suficiente (pases de abordar faltantes).
+  const faltaPases = capturados.reduce((s, g) => suma(s, pendientePorEvidencia(g)), 0);
+  const capturadoTotal = capturados.reduce((s, g) => suma(s, g.montoMXN), 0);
+  const sinComprobar = Math.max(0, resta(asignado, capturadoTotal));
 
   // 7.2 Etapas del flujo.
   const etapas = [
@@ -115,7 +121,7 @@ function Tablero() {
     const asig = estado.presupuestos.filter((p) => p.rubro === r).reduce((s, p) => suma(s, p.monto), 0);
     const comp = noBorrador
       .filter((g) => g.rubro === r && cuentaComprobado(g))
-      .reduce((s, g) => suma(s, g.montoMXN), 0);
+      .reduce((s, g) => suma(s, montoComprobable(g)), 0);
     return { rubro: r, asig, comp, pct: asig ? Math.round((comp / asig) * 100) : 0 };
   });
   const maxRubro = Math.max(...rubros.map((r) => r.asig), 0);
@@ -183,7 +189,7 @@ function Tablero() {
   filasAtencion.push(...g1, ...g2, ...g3, ...g4);
   const atencion = filasAtencion.slice(0, MAX_ATENCION);
 
-  const sumaEscrita = `Aprobado ${mxn(aprobadoTotal)} + En dictamen ${mxn(dictamenTotal)} + Sin comprobar ${mxn(sinComprobar)} = ${mxn(asignado)} de presupuesto asignado.`;
+  const sumaEscrita = `Aprobado (con evidencia) ${mxn(aprobadoTotal)} + En dictamen (con evidencia) ${mxn(dictamenTotal)} + Pendiente por falta de pases ${mxn(faltaPases)} + Sin capturar ${mxn(sinComprobar)} = ${mxn(asignado)} de presupuesto asignado.`;
 
   // Comprobación sin factura: indicador de observación, sin umbral definido.
   const sinFactura = resumenSinFactura(estado.gastos);
@@ -237,19 +243,20 @@ function Tablero() {
                 segmentos={[
                   { etiqueta: "Aprobado", valor: aprobadoTotal, color: "var(--estado-verde)" },
                   { etiqueta: "En dictamen", valor: dictamenTotal, color: "var(--estado-ambar)" },
-                  { etiqueta: "Sin comprobar", valor: sinComprobar, color: "var(--track)", textoOscuro: true },
+                  { etiqueta: "Falta de pases", valor: faltaPases, color: "var(--estado-rojo)" },
+                  { etiqueta: "Sin capturar", valor: sinComprobar, color: "var(--track)", textoOscuro: true },
                 ]}
               />
               <div
                 className="mt-2 ml-auto border-x border-b border-ink-3 pt-1"
                 style={{
-                  width: `${asignado ? Math.min(100, ((dictamenTotal + sinComprobar) / asignado) * 100) : 0}%`,
+                  width: `${asignado ? Math.min(100, ((dictamenTotal + faltaPases + sinComprobar) / asignado) * 100) : 0}%`,
                   height: 8,
                 }}
                 aria-hidden="true"
               />
               <p className="mt-1 text-center text-xs text-ink-2">
-                Pendiente de comprobar · {mxn(suma(dictamenTotal, sinComprobar))}
+                Pendiente de comprobar · {mxn(suma(suma(dictamenTotal, faltaPases), sinComprobar))}
               </p>
               <p className="mt-2 text-xs text-ink-3">{sumaEscrita}</p>
             </div>
@@ -300,7 +307,8 @@ function Tablero() {
                 items={[
                   { etiqueta: "Aprobado", color: "var(--estado-verde)" },
                   { etiqueta: "En dictamen", color: "var(--estado-ambar)" },
-                  { etiqueta: "Pendiente", color: "var(--track)" },
+                  { etiqueta: "Falta de pases", color: "var(--estado-rojo)" },
+                  { etiqueta: "Sin capturar", color: "var(--track)" },
                 ]}
               />
               <div className="grid gap-3">
@@ -309,19 +317,28 @@ function Tablero() {
                     .filter((p) => p.eventoId === ev.id)
                     .reduce((s, p) => suma(s, p.monto), 0);
                   const gs = estado.gastos.filter((g) => g.eventoId === ev.id && !esBorrador(g));
-                  const apro = gs.filter((g) => g.estatus === "Aprobado").reduce((s, g) => suma(s, g.montoMXN), 0);
-                  const dict = gs.filter(cuentaEnDictamen).reduce((s, g) => suma(s, g.montoMXN), 0);
-                  const comp = gs.filter(cuentaComprobado).reduce((s, g) => suma(s, g.montoMXN), 0);
-                  const rest = Math.max(0, resta(resta(asig, apro), dict));
+                  const cap = gs.filter((g) => cuentaComprobado(g) || cuentaEnDictamen(g));
+                  const comp = gs
+                    .filter(cuentaComprobado)
+                    .reduce((s, g) => suma(s, montoComprobable(g)), 0);
+                  const dict = gs
+                    .filter(cuentaEnDictamen)
+                    .reduce((s, g) => suma(s, montoComprobable(g)), 0);
+                  const pases = cap.reduce((s, g) => suma(s, pendientePorEvidencia(g)), 0);
+                  const rest = Math.max(
+                    0,
+                    resta(asig, cap.reduce((s, g) => suma(s, g.montoMXN), 0)),
+                  );
                   return (
                     <BarraApilada
                       key={ev.id}
                       nombre={ev.nombre}
                       cifra={`${asig ? Math.round((comp / asig) * 100) : 0}% · ${mxn(comp)} de ${mxn(asig)}`}
                       segmentos={[
-                        { etiqueta: "Aprobado", valor: apro, color: "var(--estado-verde)" },
+                        { etiqueta: "Aprobado", valor: comp, color: "var(--estado-verde)" },
                         { etiqueta: "En dictamen", valor: dict, color: "var(--estado-ambar)" },
-                        { etiqueta: "Pendiente", valor: rest, color: "var(--track)", textoOscuro: true },
+                        { etiqueta: "Falta de pases", valor: pases, color: "var(--estado-rojo)" },
+                        { etiqueta: "Sin capturar", valor: rest, color: "var(--track)", textoOscuro: true },
                       ]}
                     />
                   );
@@ -508,6 +525,7 @@ function Tablero() {
             "Asignado",
             "Comprobado",
             "Pend. de comprobar",
+            "Falta de pases",
             "% comprobado",
             "Sin factura",
             "Semáforo",
@@ -517,7 +535,12 @@ function Tablero() {
           {estado.eventos.map((ev) => {
             const asig = estado.presupuestos.filter((p) => p.eventoId === ev.id).reduce((s, p) => suma(s, p.monto), 0);
             const gastosEv = estado.gastos.filter((g) => g.eventoId === ev.id && !esBorrador(g));
-            const comp = gastosEv.filter(cuentaComprobado).reduce((s, g) => suma(s, g.montoMXN), 0);
+            const comp = gastosEv
+              .filter(cuentaComprobado)
+              .reduce((s, g) => suma(s, montoComprobable(g)), 0);
+            const pases = gastosEv
+              .filter((g) => cuentaComprobado(g) || cuentaEnDictamen(g))
+              .reduce((s, g) => suma(s, pendientePorEvidencia(g)), 0);
             const pend = gastosEv.filter(estaPendiente);
             const rojo = comp > asig || gastosEv.some((g) => g.estatus === "Rechazado");
             const tono = rojo ? "error" : pend.length ? "alerta" : "ok";
@@ -530,6 +553,7 @@ function Tablero() {
                 <Celda>{mxn(asig)}</Celda>
                 <Celda>{mxn(comp)}</Celda>
                 <Celda>{mxn(resta(asig, comp))}</Celda>
+                <Celda>{mxn(pases)}</Celda>
                 <Celda>{asig ? Math.round((comp / asig) * 100) : 0}%</Celda>
                 <Celda>
                   <span style={{ color: "var(--dato)" }} className="font-semibold">
