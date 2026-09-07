@@ -150,7 +150,15 @@ function Reportes() {
                   <Celda>
                     <Etiqueta tono="neutro">{g.tipoComprobante}</Etiqueta>
                   </Celda>
-                  <Celda>{mxn(g.montoMXN)}</Celda>
+                  <Celda>
+                    {mxn(g.montoMXN)}
+                    {pendientePorEvidencia(g) > 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        Comprobable {mxn(montoComprobable(g))} · falta de pases{" "}
+                        {mxn(pendientePorEvidencia(g))}
+                      </p>
+                    ) : null}
+                  </Celda>
                   <Celda>
                     {g.participantesIds
                       .map((id) => evento?.participantes.find((p) => p.id === id)?.nombre ?? id)
