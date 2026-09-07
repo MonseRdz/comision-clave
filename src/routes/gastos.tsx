@@ -93,6 +93,7 @@ function Gastos() {
 
   const [detalle, setDetalle] = useState<string | null>(null);
   const [edicion, setEdicion] = useState<{ id: string; monto: string } | null>(null);
+  const [comprobacion, setComprobacion] = useState<string | null>(null);
 
   const evento = estado.eventos.find((e) => e.id === f.eventoId);
   const esTransporte = f.rubro === "Transporte";
