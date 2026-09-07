@@ -1061,7 +1061,11 @@ function Gastos() {
                         )
                         .join(", ")}
                     </li>
+                    <li>
+                      <DesgloseViajeros gasto={g} />
+                    </li>
                   </ul>
+
                 ) : null}
               </Celda>
             </tr>
