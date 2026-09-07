@@ -10,6 +10,7 @@ import { actualizarGasto, borrarArchivos, insertarGasto, subirArchivos, MAX_ARCH
 import { repartoUniforme, sumaViajeros } from "@/lib/transporte";
 import { ArchivoEnlace } from "@/components/archivo-enlace";
 import { DesgloseViajeros } from "@/components/desglose-viajeros";
+import { EditarComprobacion, puedeEditarComprobacion } from "@/components/editar-comprobacion";
 
 
 
@@ -92,6 +93,7 @@ function Gastos() {
 
   const [detalle, setDetalle] = useState<string | null>(null);
   const [edicion, setEdicion] = useState<{ id: string; monto: string } | null>(null);
+  const [comprobacion, setComprobacion] = useState<string | null>(null);
 
   const evento = estado.eventos.find((e) => e.id === f.eventoId);
   const esTransporte = f.rubro === "Transporte";
@@ -981,6 +983,17 @@ function Gastos() {
                   <Boton variante="neutro" onClick={() => setDetalle(detalle === g.id ? null : g.id)}>
                     {detalle === g.id ? "Ocultar" : "Ver adjuntos"}
                   </Boton>
+                  {puedeEditarComprobacion(g) ? (
+                    <Boton
+                      variante="neutro"
+                      onClick={() => {
+                        setError("");
+                        setComprobacion(comprobacion === g.id ? null : g.id);
+                      }}
+                    >
+                      {comprobacion === g.id ? "Cerrar comprobación" : "Editar comprobación"}
+                    </Boton>
+                  ) : null}
                   {edicion?.id === g.id ? (
                     <span className="flex items-center gap-2">
                       <label className="sr-only" htmlFor={`ed-${g.id}`}>
@@ -1068,6 +1081,18 @@ function Gastos() {
                     </li>
                   </ul>
 
+                ) : null}
+                {comprobacion === g.id && puedeEditarComprobacion(g) ? (
+                  <EditarComprobacion
+                    gasto={g}
+                    onCerrar={() => setComprobacion(null)}
+                    onGuardado={(guardado) => {
+                      aplicarGasto(guardado);
+                      setComprobacion(null);
+                      setError("");
+                      setAviso(`Comprobación de "${guardado.proveedor}" actualizada.`);
+                    }}
+                  />
                 ) : null}
               </Celda>
             </tr>
