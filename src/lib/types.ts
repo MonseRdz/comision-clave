@@ -46,9 +46,15 @@ export type Archivo = {
   dataUrl?: string | undefined;
   /** Participante al que corresponde el pase de abordar, si aplica. */
   participanteId?: string | undefined;
+  /** Tramo del pase de abordar. Los pases antiguos sin tramo cuentan como ida. */
+  tramo?: "Ida" | "Regreso" | undefined;
 };
 
+/** Importe individual asignado a un viajero dentro de un gasto de Transporte. */
+export type Viajero = { participanteId: string; importe: number };
+
 export type Escala = { pais: string; ciudad: string };
+
 
 /** Trazabilidad de la extracción inteligente: propuesta de IA vs. valor confirmado. */
 export type IaExtraccion = {
@@ -102,7 +108,10 @@ export type Gasto = {
   /** Escalas o paradas intermedias del traslado, en orden. */
   escalas: Escala[];
   participantesIds: string[];
+  /** Reparto del total entre viajeros (solo rubro Transporte). */
+  viajeros: Viajero[];
   archivos: Archivo[];
+
   estatus: EstatusGasto;
   observaciones: string;
   comisionadoId: string;

@@ -1,13 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { convertirMoneda } from "@/lib/dinero";
+import { convertirMoneda, redondear, resta } from "@/lib/dinero";
 import { useState } from "react";
 import { useStore, mxn, nuevoId, fechaCorta, esInmutable, hoyISO } from "@/lib/store";
-import type { Archivo, Escala, Gasto, IaExtraccion, TipoComprobante } from "@/lib/types";
+import type { Archivo, Escala, Gasto, IaExtraccion, TipoComprobante, Viajero } from "@/lib/types";
 import { TIPOS_COMPROBANTE } from "@/lib/types";
 import { PAISES, rutaTexto } from "@/lib/paises";
 import { buscarDuplicado, gastoRepetido, huellaArchivo, mensajeDuplicado } from "@/lib/duplicados";
 import { actualizarGasto, borrarArchivos, insertarGasto, subirArchivos, MAX_ARCHIVO_MB } from "@/lib/db";
+import { repartoUniforme, sumaViajeros } from "@/lib/transporte";
 import { ArchivoEnlace } from "@/components/archivo-enlace";
+import { DesgloseViajeros } from "@/components/desglose-viajeros";
+
+
 
 import { ExtraccionIA } from "@/components/extraccion-ia";
 
@@ -77,7 +81,9 @@ function Gastos() {
   const [escalas, setEscalas] = useState<Escala[]>([]);
   const [participantes, setParticipantes] = useState<string[]>([]);
   const [archivos, setArchivos] = useState<Archivo[]>([]);
-  const [pases, setPases] = useState<Record<string, Archivo>>({});
+  const [pases, setPases] = useState<Record<string, { Ida?: Archivo; Regreso?: Archivo }>>({});
+  const [importes, setImportes] = useState<Record<string, string>>({});
+
   const [aviso, setAviso] = useState("");
   const [error, setError] = useState("");
   const [iaMeta, setIaMeta] = useState<IaExtraccion | null>(null);
@@ -93,12 +99,27 @@ function Gastos() {
   const esExtranjero = f.tipoComprobante === "Comprobante extranjero";
   const esSinComprobante = f.tipoComprobante === "Sin comprobante fiscal";
   const nominales = evento?.participantes ?? [];
-  const faltanPases = esTransporte ? nominales.filter((p) => !pases[p.id]) : [];
   const monto = Number(f.monto) || 0;
   const subtotalNum = f.subtotal.trim() === "" ? null : Number(f.subtotal);
   const ivaNum = f.iva.trim() === "" ? null : Number(f.iva);
   const tc = f.moneda === "MXN" ? 1 : Number(f.tipoCambio) || 0;
   const montoMXN = convertirMoneda(monto, tc);
+  const viajerosSel = esTransporte ? participantes : [];
+  const repartoBase = repartoUniforme(montoMXN, viajerosSel);
+  const importeDe = (id: string) => {
+    const t = importes[id];
+    if (t !== undefined && t.trim() !== "") return Number(t) || 0;
+    return repartoBase.find((v) => v.participanteId === id)?.importe ?? 0;
+  };
+  const viajeros: Viajero[] = viajerosSel.map((id) => ({
+    participanteId: id,
+    importe: importeDe(id),
+  }));
+  const sumaIndividual = sumaViajeros(viajeros);
+  const diferenciaReparto = redondear(resta(montoMXN, sumaIndividual));
+  const faltanPases = viajerosSel.filter((id) => !pases[id]?.Ida || !pases[id]?.Regreso);
+  const nombreDe = (id: string) => nominales.find((p) => p.id === id)?.nombre ?? id;
+
 
   async function leerArchivo(file: File): Promise<Archivo> {
     const leido = await new Promise<Archivo>((resolve) => {
@@ -111,7 +132,11 @@ function Gastos() {
     return { ...leido, hash: await huellaArchivo(leido) };
   }
 
-  async function cargarPase(participanteId: string, lista: FileList | null) {
+  async function cargarPase(
+    participanteId: string,
+    tramo: "Ida" | "Regreso",
+    lista: FileList | null,
+  ) {
     const file = lista?.[0];
     if (!file) return;
     if (file.size > MAX_ARCHIVO_MB * 1024 * 1024)
@@ -119,9 +144,11 @@ function Gastos() {
     const leido = await leerArchivo(file);
     const otros = [
       ...archivos,
-      ...Object.entries(pases)
-        .filter(([k]) => k !== participanteId)
-        .map(([, a]) => a),
+      ...Object.entries(pases).flatMap(([k, v]) =>
+        [v.Ida, v.Regreso].filter(
+          (a): a is Archivo => Boolean(a) && !(k === participanteId && a?.tramo === tramo),
+        ),
+      ),
     ];
     const dup = await buscarDuplicado([leido], estado.gastos);
     const dupLocal = await buscarDuplicado([leido, ...otros], []);
@@ -130,8 +157,12 @@ function Gastos() {
       return;
     }
     setError("");
-    setPases((prev) => ({ ...prev, [participanteId]: { ...leido, participanteId } }));
+    setPases((prev) => ({
+      ...prev,
+      [participanteId]: { ...prev[participanteId], [tramo]: { ...leido, participanteId, tramo } },
+    }));
   }
+
 
   async function cargarArchivos(lista: FileList | null) {
     if (!lista) return;
@@ -188,15 +219,21 @@ function Gastos() {
       return setError("Adjunta la factura (XML/PDF) del CFDI nacional o cambia el tipo de comprobante.");
     }
 
+    if (esTransporte && viajerosSel.length && Math.abs(diferenciaReparto) > 0.01)
+      return setError(
+        `La suma de los importes por viajero (${mxn(sumaIndividual)}) no cuadra con el total del gasto (${mxn(montoMXN)}). Diferencia: ${mxn(diferenciaReparto)}.`,
+      );
+
     const avisosPendientes: string[] = [];
     if (esTransporte) {
       if (!f.origenPais || !f.origenCiudad.trim() || !f.destinoPais || !f.destinoCiudad.trim())
         avisosPendientes.push("faltan datos completos de Origen y Destino");
       if (faltanPases.length)
         avisosPendientes.push(
-          `faltan pases de abordar de: ${faltanPases.map((p) => p.nombre).join(", ")}`,
+          `faltan pases de abordar (ida y regreso) de: ${faltanPases.map(nombreDe).join(", ")}`,
         );
     }
+
 
     // Las validaciones fiscales solo aplican al régimen de CFDI nacional:
     // un comprobante extranjero no tiene RFC ni folio fiscal mexicano.
@@ -222,8 +259,14 @@ function Gastos() {
     }
 
     const adjuntos: Archivo[] = esTransporte
-      ? [...archivos, ...nominales.map((p) => pases[p.id]).filter((a): a is Archivo => Boolean(a))]
+      ? [
+          ...archivos,
+          ...viajerosSel.flatMap((id) =>
+            [pases[id]?.Ida, pases[id]?.Regreso].filter((a): a is Archivo => Boolean(a)),
+          ),
+        ]
       : archivos;
+
 
     const dupDoc = await buscarDuplicado(adjuntos, estado.gastos);
     if (dupDoc) return setError(mensajeDuplicado(dupDoc.archivo, dupDoc.coincidencia));
@@ -252,7 +295,9 @@ function Gastos() {
             .map((x) => ({ pais: x.pais, ciudad: x.ciudad.trim() }))
         : [],
       participantesIds: participantes,
+      viajeros: esTransporte ? viajeros : [],
       archivos: adjuntos,
+
       estatus: "Borrador",
       observaciones: "",
       comisionadoId: usuarioActual.id,
@@ -325,6 +370,8 @@ function Gastos() {
     setParticipantes([]);
     setArchivos([]);
     setPases({});
+    setImportes({});
+
     setIaMeta(null);
     setFiscal({ uuidFiscal: "", rfcEmisor: "", rfcReceptor: "" });
   }
@@ -637,36 +684,85 @@ function Gastos() {
               </div>
 
               <div className="mt-4">
-                <p className="text-sm font-semibold">Pases de abordar por participante del evento</p>
+                <p className="text-sm font-semibold">Comprobación por viajero</p>
                 <p className="text-sm text-muted-foreground">
-                  Carga el pase de abordar de cada participante de la lista nominal. Si falta alguno, el gasto se
-                  registra marcado como evidencia incompleta.
+                  El total se reparte entre los participantes seleccionados abajo. Puedes ajustar el importe
+                  de cada persona. Un viajero se considera comprobado solo con su pase de ida y su pase de
+                  regreso.
                 </p>
                 <ul className="mt-2 grid gap-2">
-                  {nominales.length ? (
-                    nominales.map((p) => (
+                  {viajerosSel.length ? (
+                    viajerosSel.map((id) => (
                       <li
-                        key={p.id}
-                        className="grid gap-2 rounded-md border-2 border-border-strong bg-glass-strong p-2 md:grid-cols-[1fr_auto] md:items-center"
+                        key={id}
+                        className="grid gap-2 rounded-md border-2 border-border-strong bg-glass-strong p-2"
                       >
-                        <Campo etiqueta={`Pase de abordar de ${p.nombre}`} id={`pase-${p.id}`}>
-                          <input
-                            id={`pase-${p.id}`}
-                            type="file"
-                            onChange={(e) => cargarPase(p.id, e.target.files)}
-                            className="w-full rounded-md border-2 border-border-strong bg-input px-3 py-2 text-sm"
-                          />
-                        </Campo>
-                        <Etiqueta tono={pases[p.id] ? "ok" : "alerta"}>
-                          {pases[p.id]?.nombre ?? "Pendiente"}
-                        </Etiqueta>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <strong className="text-sm">{nombreDe(id)}</strong>
+                          <Etiqueta tono={pases[id]?.Ida && pases[id]?.Regreso ? "ok" : "alerta"}>
+                            {pases[id]?.Ida && pases[id]?.Regreso
+                              ? "Evidencia completa"
+                              : `Evidencia incompleta · falta ${!pases[id]?.Ida ? "ida" : ""}${!pases[id]?.Ida && !pases[id]?.Regreso ? " y " : ""}${!pases[id]?.Regreso ? "regreso" : ""}`}
+                          </Etiqueta>
+                        </div>
+                        <div className="grid gap-2 md:grid-cols-3">
+                          <Campo etiqueta="Importe individual (MXN)" id={`imp-${id}`}>
+                            <Entrada
+                              id={`imp-${id}`}
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              value={importes[id] ?? String(importeDe(id) || "")}
+                              onChange={(e) => setImportes((prev) => ({ ...prev, [id]: e.target.value }))}
+                            />
+                          </Campo>
+                          <Campo etiqueta="Pase de abordar · ida" id={`pase-ida-${id}`}>
+                            <input
+                              id={`pase-ida-${id}`}
+                              type="file"
+                              onChange={(e) => cargarPase(id, "Ida", e.target.files)}
+                              className="w-full rounded-md border-2 border-border-strong bg-input px-3 py-2 text-sm"
+                            />
+                            <span className="mt-1 block text-xs text-muted-foreground">
+                              {pases[id]?.Ida?.nombre ?? "Pendiente"}
+                            </span>
+                          </Campo>
+                          <Campo etiqueta="Pase de abordar · regreso" id={`pase-reg-${id}`}>
+                            <input
+                              id={`pase-reg-${id}`}
+                              type="file"
+                              onChange={(e) => cargarPase(id, "Regreso", e.target.files)}
+                              className="w-full rounded-md border-2 border-border-strong bg-input px-3 py-2 text-sm"
+                            />
+                            <span className="mt-1 block text-xs text-muted-foreground">
+                              {pases[id]?.Regreso?.nombre ?? "Pendiente"}
+                            </span>
+                          </Campo>
+                        </div>
                       </li>
                     ))
                   ) : (
-                    <li className="text-sm text-muted-foreground">El evento no tiene lista nominal cargada.</li>
+                    <li className="text-sm text-muted-foreground">
+                      Selecciona abajo a los participantes que viajaron para repartir el total entre ellos.
+                    </li>
                   )}
                 </ul>
+                {viajerosSel.length ? (
+                  <p className="mt-2 text-sm">
+                    Suma de importes individuales: <strong>{mxn(sumaIndividual)}</strong> de{" "}
+                    <strong>{mxn(montoMXN)}</strong>
+                    {Math.abs(diferenciaReparto) > 0.01 ? (
+                      <span className="font-semibold text-warning">
+                        {" "}
+                        · Diferencia por cuadrar: {mxn(diferenciaReparto)}
+                      </span>
+                    ) : (
+                      " · La suma cuadra con el total."
+                    )}
+                  </p>
+                ) : null}
               </div>
+
             </fieldset>
           ) : null}
 
@@ -967,7 +1063,11 @@ function Gastos() {
                         )
                         .join(", ")}
                     </li>
+                    <li>
+                      <DesgloseViajeros gasto={g} />
+                    </li>
                   </ul>
+
                 ) : null}
               </Celda>
             </tr>

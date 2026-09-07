@@ -94,7 +94,9 @@ export function aGasto(fila: Fila): Gasto {
     destinoCiudad: g["destino_ciudad"] ?? "",
     escalas: (g["escalas"] as Gasto["escalas"]) ?? [],
     participantesIds: g["participantes_ids"] ?? [],
+    viajeros: (g["viajeros"] as Gasto["viajeros"]) ?? [],
     archivos: (g["archivos"] as Archivo[]) ?? [],
+
     estatus: g["estatus"] as Gasto["estatus"],
     observaciones: g["observaciones"] ?? "",
     comisionadoId: g["comisionado_id"] ?? "",
@@ -134,7 +136,9 @@ export function filaGasto(g: Gasto): Fila {
     destino_ciudad: g.destinoCiudad ?? "",
     escalas: g.escalas ?? [],
     participantes_ids: g.participantesIds,
+    viajeros: g.viajeros ?? [],
     archivos: g.archivos,
+
     observaciones: g.observaciones,
     comisionado_id: uuidONull(g.comisionadoId),
     creado_en: g.creadoEn,
