@@ -918,8 +918,26 @@ function Gastos() {
         </form>
       </Panel>
 
+      {(() => {
+        const enEdicion = mios.find((g) => g.id === comprobacion && puedeEditarComprobacion(g));
+        return enEdicion ? (
+          <EditarComprobacion
+            key={enEdicion.id}
+            gasto={enEdicion}
+            onCerrar={() => setComprobacion(null)}
+            onGuardado={(guardado) => {
+              aplicarGasto(guardado);
+              setComprobacion(null);
+              setError("");
+              setAviso(`Comprobación de "${guardado.proveedor}" actualizada.`);
+            }}
+          />
+        ) : null;
+      })()}
+
       <Panel>
         <TituloPanel sub="Los borradores solo los ves tú y no cuentan en presupuestos ni reportes hasta enviarlos a revisión.">
+
           Mis gastos
         </TituloPanel>
         <Tabla
