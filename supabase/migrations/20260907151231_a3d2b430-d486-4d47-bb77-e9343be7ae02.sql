@@ -1,0 +1,1 @@
+ALTER TABLE public.gastos ADD COLUMN IF NOT EXISTS viajeros jsonb NOT NULL DEFAULT '[]'::jsonb;

@@ -196,6 +196,7 @@ export type Database = {
           tipo_cambio: number
           tipo_comprobante: string
           uuid_fiscal: string | null
+          viajeros: Json
         }
         Insert: {
           archivos?: Json
@@ -231,6 +232,7 @@ export type Database = {
           tipo_cambio?: number
           tipo_comprobante?: string
           uuid_fiscal?: string | null
+          viajeros?: Json
         }
         Update: {
           archivos?: Json
@@ -266,6 +268,7 @@ export type Database = {
           tipo_cambio?: number
           tipo_comprobante?: string
           uuid_fiscal?: string | null
+          viajeros?: Json
         }
         Relationships: [
           {
