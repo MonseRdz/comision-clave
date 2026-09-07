@@ -10,6 +10,7 @@ import { actualizarGasto, borrarArchivos, insertarGasto, subirArchivos, MAX_ARCH
 import { repartoUniforme, sumaViajeros } from "@/lib/transporte";
 import { ArchivoEnlace } from "@/components/archivo-enlace";
 import { DesgloseViajeros } from "@/components/desglose-viajeros";
+import { EditarComprobacion, puedeEditarComprobacion } from "@/components/editar-comprobacion";
 
 
 
