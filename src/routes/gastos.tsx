@@ -7,7 +7,7 @@ import { TIPOS_COMPROBANTE } from "@/lib/types";
 import { PAISES, rutaTexto } from "@/lib/paises";
 import { buscarDuplicado, gastoRepetido, huellaArchivo, mensajeDuplicado } from "@/lib/duplicados";
 import { actualizarGasto, borrarArchivos, insertarGasto, subirArchivos, MAX_ARCHIVO_MB } from "@/lib/db";
-import { desgloseViajeros, repartoUniforme, sumaViajeros, tieneFactura } from "@/lib/transporte";
+import { repartoUniforme, sumaViajeros } from "@/lib/transporte";
 import { ArchivoEnlace } from "@/components/archivo-enlace";
 import { DesgloseViajeros } from "@/components/desglose-viajeros";
 
