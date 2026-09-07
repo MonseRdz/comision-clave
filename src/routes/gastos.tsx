@@ -1082,6 +1082,18 @@ function Gastos() {
                   </ul>
 
                 ) : null}
+                {comprobacion === g.id && puedeEditarComprobacion(g) ? (
+                  <EditarComprobacion
+                    gasto={g}
+                    onCerrar={() => setComprobacion(null)}
+                    onGuardado={(guardado) => {
+                      aplicarGasto(guardado);
+                      setComprobacion(null);
+                      setError("");
+                      setAviso(`Comprobación de "${guardado.proveedor}" actualizada.`);
+                    }}
+                  />
+                ) : null}
               </Celda>
             </tr>
           ))}
