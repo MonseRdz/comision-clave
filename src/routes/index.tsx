@@ -525,6 +525,7 @@ function Tablero() {
             "Asignado",
             "Comprobado",
             "Pend. de comprobar",
+            "Falta de pases",
             "% comprobado",
             "Sin factura",
             "Semáforo",
@@ -534,7 +535,12 @@ function Tablero() {
           {estado.eventos.map((ev) => {
             const asig = estado.presupuestos.filter((p) => p.eventoId === ev.id).reduce((s, p) => suma(s, p.monto), 0);
             const gastosEv = estado.gastos.filter((g) => g.eventoId === ev.id && !esBorrador(g));
-            const comp = gastosEv.filter(cuentaComprobado).reduce((s, g) => suma(s, g.montoMXN), 0);
+            const comp = gastosEv
+              .filter(cuentaComprobado)
+              .reduce((s, g) => suma(s, montoComprobable(g)), 0);
+            const pases = gastosEv
+              .filter((g) => cuentaComprobado(g) || cuentaEnDictamen(g))
+              .reduce((s, g) => suma(s, pendientePorEvidencia(g)), 0);
             const pend = gastosEv.filter(estaPendiente);
             const rojo = comp > asig || gastosEv.some((g) => g.estatus === "Rechazado");
             const tono = rojo ? "error" : pend.length ? "alerta" : "ok";
@@ -547,6 +553,7 @@ function Tablero() {
                 <Celda>{mxn(asig)}</Celda>
                 <Celda>{mxn(comp)}</Celda>
                 <Celda>{mxn(resta(asig, comp))}</Celda>
+                <Celda>{mxn(pases)}</Celda>
                 <Celda>{asig ? Math.round((comp / asig) * 100) : 0}%</Celda>
                 <Celda>
                   <span style={{ color: "var(--dato)" }} className="font-semibold">
