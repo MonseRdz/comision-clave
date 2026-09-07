@@ -108,7 +108,10 @@ export type Gasto = {
   /** Escalas o paradas intermedias del traslado, en orden. */
   escalas: Escala[];
   participantesIds: string[];
+  /** Reparto del total entre viajeros (solo rubro Transporte). */
+  viajeros: Viajero[];
   archivos: Archivo[];
+
   estatus: EstatusGasto;
   observaciones: string;
   comisionadoId: string;
