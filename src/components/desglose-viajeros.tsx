@@ -3,6 +3,37 @@ import { comprobadoDe, desgloseViajeros, esGastoTransporte, pendienteDe, tieneFa
 import type { Gasto } from "@/lib/types";
 import { Etiqueta } from "@/components/glass";
 
+/** Resumen prominente de comprobado vs. pendiente de un gasto. */
+export function ResumenComprobacion({
+  comprobado,
+  pendiente,
+  total,
+}: {
+  comprobado: number;
+  pendiente: number;
+  total: number;
+}) {
+  return (
+    <div className="grid gap-2 rounded-md border-2 border-border-strong bg-glass-strong p-3 sm:grid-cols-3">
+      <div>
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">Comprobado</p>
+        <p className="cifra text-lg font-bold text-success">{mxn(comprobado)}</p>
+      </div>
+      <div>
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">Pendiente de comprobar</p>
+        <p className="cifra text-lg font-bold text-warning">{mxn(pendiente)}</p>
+      </div>
+      <div>
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">Total del gasto</p>
+        <p className="cifra text-lg font-bold">{mxn(total)}</p>
+        <p className="text-xs text-muted-foreground">
+          {mxn(comprobado)} + {mxn(pendiente)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /** Desglose por viajero de un gasto de Transporte: importe, pases y pendiente. */
 export function DesgloseViajeros({ gasto }: { gasto: Gasto }) {
   const { estado } = useStore();
@@ -15,12 +46,19 @@ export function DesgloseViajeros({ gasto }: { gasto: Gasto }) {
   return (
     <div className="mt-2 rounded-md border-2 border-border-strong p-2">
       <p className="text-sm font-semibold">Comprobación por viajero</p>
+      <div className="mt-2">
+        <ResumenComprobacion
+          comprobado={comprobadoDe(gasto)}
+          pendiente={pendienteDe(gasto)}
+          total={gasto.montoMXN}
+        />
+      </div>
       {!conFactura ? (
-        <p className="text-xs font-semibold text-warning">
+        <p className="mt-2 text-xs font-semibold text-warning">
           Sin factura que ampare el total: todo el gasto queda pendiente de comprobar.
         </p>
       ) : null}
-      <ul className="mt-1 grid gap-1 text-xs">
+      <ul className="mt-2 grid gap-1 text-xs">
         {filas.map((v) => (
           <li key={v.participanteId} className="flex flex-wrap items-center gap-2">
             <span className="min-w-40 flex-1">
@@ -37,10 +75,7 @@ export function DesgloseViajeros({ gasto }: { gasto: Gasto }) {
           </li>
         ))}
       </ul>
-      <p className="mt-1 text-xs">
-        Comprobado: <strong>{mxn(comprobadoDe(gasto))}</strong> · Pendiente de comprobar:{" "}
-        <strong>{mxn(pendienteDe(gasto))}</strong> de {mxn(gasto.montoMXN)}
-      </p>
     </div>
   );
 }
+
