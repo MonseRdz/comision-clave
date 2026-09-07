@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useStore, mxn, fechaCorta, diasDesde } from "@/lib/store";
 import { actualizarGasto, cargarGastosPorEstatus } from "@/lib/db";
 import { ArchivoEnlace } from "@/components/archivo-enlace";
+import { DesgloseViajeros } from "@/components/desglose-viajeros";
+
 import type { Gasto } from "@/lib/types";
 import {
   Panel,
@@ -142,25 +144,8 @@ function Revision() {
                       {(g.escalas?.length ?? 0) > 0 ? ` · ${g.escalas.length} escala(s)` : ""}
                     </p>
                   ) : null}
-                  {g.rubro === "Transporte"
-                    ? (() => {
-                        const nominales =
-                          estado.eventos.find((e) => e.id === g.eventoId)?.participantes ?? [];
-                        const faltan = nominales.filter(
-                          (p) => !g.archivos.some((a) => a.participanteId === p.id),
-                        );
-                        return faltan.length ? (
-                          <p className="mt-1 text-xs font-semibold">
-                            Evidencia incompleta: faltan pases de abordar de{" "}
-                            {faltan.map((p) => p.nombre).join(", ")}.
-                          </p>
-                        ) : (
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            Pases de abordar completos ({nominales.length}).
-                          </p>
-                        );
-                      })()
-                    : null}
+                  <DesgloseViajeros gasto={g} />
+
                   <p className="mt-1 text-xs text-muted-foreground">
                     Participantes:{" "}
                     {g.participantesIds
