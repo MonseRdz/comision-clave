@@ -983,6 +983,17 @@ function Gastos() {
                   <Boton variante="neutro" onClick={() => setDetalle(detalle === g.id ? null : g.id)}>
                     {detalle === g.id ? "Ocultar" : "Ver adjuntos"}
                   </Boton>
+                  {puedeEditarComprobacion(g) ? (
+                    <Boton
+                      variante="neutro"
+                      onClick={() => {
+                        setError("");
+                        setComprobacion(comprobacion === g.id ? null : g.id);
+                      }}
+                    >
+                      {comprobacion === g.id ? "Cerrar comprobación" : "Editar comprobación"}
+                    </Boton>
+                  ) : null}
                   {edicion?.id === g.id ? (
                     <span className="flex items-center gap-2">
                       <label className="sr-only" htmlFor={`ed-${g.id}`}>
