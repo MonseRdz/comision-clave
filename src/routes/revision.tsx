@@ -5,6 +5,8 @@ import { useStore, mxn, fechaCorta, diasDesde } from "@/lib/store";
 import { actualizarGasto, cargarGastosPorEstatus } from "@/lib/db";
 import { ArchivoEnlace } from "@/components/archivo-enlace";
 import { DesgloseViajeros } from "@/components/desglose-viajeros";
+import { comprobadoDe, esGastoTransporte, pendienteDe } from "@/lib/transporte";
+
 
 import type { Gasto } from "@/lib/types";
 import {
