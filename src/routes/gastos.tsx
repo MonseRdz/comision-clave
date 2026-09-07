@@ -293,7 +293,9 @@ function Gastos() {
             .map((x) => ({ pais: x.pais, ciudad: x.ciudad.trim() }))
         : [],
       participantesIds: participantes,
+      viajeros: esTransporte ? viajeros : [],
       archivos: adjuntos,
+
       estatus: "Borrador",
       observaciones: "",
       comisionadoId: usuarioActual.id,
@@ -366,6 +368,8 @@ function Gastos() {
     setParticipantes([]);
     setArchivos([]);
     setPases({});
+    setImportes({});
+
     setIaMeta(null);
     setFiscal({ uuidFiscal: "", rfcEmisor: "", rfcReceptor: "" });
   }
@@ -678,36 +682,85 @@ function Gastos() {
               </div>
 
               <div className="mt-4">
-                <p className="text-sm font-semibold">Pases de abordar por participante del evento</p>
+                <p className="text-sm font-semibold">Comprobación por viajero</p>
                 <p className="text-sm text-muted-foreground">
-                  Carga el pase de abordar de cada participante de la lista nominal. Si falta alguno, el gasto se
-                  registra marcado como evidencia incompleta.
+                  El total se reparte entre los participantes seleccionados abajo. Puedes ajustar el importe
+                  de cada persona. Un viajero se considera comprobado solo con su pase de ida y su pase de
+                  regreso.
                 </p>
                 <ul className="mt-2 grid gap-2">
-                  {nominales.length ? (
-                    nominales.map((p) => (
+                  {viajerosSel.length ? (
+                    viajerosSel.map((id) => (
                       <li
-                        key={p.id}
-                        className="grid gap-2 rounded-md border-2 border-border-strong bg-glass-strong p-2 md:grid-cols-[1fr_auto] md:items-center"
+                        key={id}
+                        className="grid gap-2 rounded-md border-2 border-border-strong bg-glass-strong p-2"
                       >
-                        <Campo etiqueta={`Pase de abordar de ${p.nombre}`} id={`pase-${p.id}`}>
-                          <input
-                            id={`pase-${p.id}`}
-                            type="file"
-                            onChange={(e) => cargarPase(p.id, e.target.files)}
-                            className="w-full rounded-md border-2 border-border-strong bg-input px-3 py-2 text-sm"
-                          />
-                        </Campo>
-                        <Etiqueta tono={pases[p.id] ? "ok" : "alerta"}>
-                          {pases[p.id]?.nombre ?? "Pendiente"}
-                        </Etiqueta>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <strong className="text-sm">{nombreDe(id)}</strong>
+                          <Etiqueta tono={pases[id]?.Ida && pases[id]?.Regreso ? "ok" : "alerta"}>
+                            {pases[id]?.Ida && pases[id]?.Regreso
+                              ? "Evidencia completa"
+                              : `Evidencia incompleta · falta ${!pases[id]?.Ida ? "ida" : ""}${!pases[id]?.Ida && !pases[id]?.Regreso ? " y " : ""}${!pases[id]?.Regreso ? "regreso" : ""}`}
+                          </Etiqueta>
+                        </div>
+                        <div className="grid gap-2 md:grid-cols-3">
+                          <Campo etiqueta="Importe individual (MXN)" id={`imp-${id}`}>
+                            <Entrada
+                              id={`imp-${id}`}
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              value={importes[id] ?? String(importeDe(id) || "")}
+                              onChange={(e) => setImportes((prev) => ({ ...prev, [id]: e.target.value }))}
+                            />
+                          </Campo>
+                          <Campo etiqueta="Pase de abordar · ida" id={`pase-ida-${id}`}>
+                            <input
+                              id={`pase-ida-${id}`}
+                              type="file"
+                              onChange={(e) => cargarPase(id, "Ida", e.target.files)}
+                              className="w-full rounded-md border-2 border-border-strong bg-input px-3 py-2 text-sm"
+                            />
+                            <span className="mt-1 block text-xs text-muted-foreground">
+                              {pases[id]?.Ida?.nombre ?? "Pendiente"}
+                            </span>
+                          </Campo>
+                          <Campo etiqueta="Pase de abordar · regreso" id={`pase-reg-${id}`}>
+                            <input
+                              id={`pase-reg-${id}`}
+                              type="file"
+                              onChange={(e) => cargarPase(id, "Regreso", e.target.files)}
+                              className="w-full rounded-md border-2 border-border-strong bg-input px-3 py-2 text-sm"
+                            />
+                            <span className="mt-1 block text-xs text-muted-foreground">
+                              {pases[id]?.Regreso?.nombre ?? "Pendiente"}
+                            </span>
+                          </Campo>
+                        </div>
                       </li>
                     ))
                   ) : (
-                    <li className="text-sm text-muted-foreground">El evento no tiene lista nominal cargada.</li>
+                    <li className="text-sm text-muted-foreground">
+                      Selecciona abajo a los participantes que viajaron para repartir el total entre ellos.
+                    </li>
                   )}
                 </ul>
+                {viajerosSel.length ? (
+                  <p className="mt-2 text-sm">
+                    Suma de importes individuales: <strong>{mxn(sumaIndividual)}</strong> de{" "}
+                    <strong>{mxn(montoMXN)}</strong>
+                    {Math.abs(diferenciaReparto) > 0.01 ? (
+                      <span className="font-semibold text-warning">
+                        {" "}
+                        · Diferencia por cuadrar: {mxn(diferenciaReparto)}
+                      </span>
+                    ) : (
+                      " · La suma cuadra con el total."
+                    )}
+                  </p>
+                ) : null}
               </div>
+
             </fieldset>
           ) : null}
 
