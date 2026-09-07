@@ -9,6 +9,8 @@ import { buscarDuplicado, gastoRepetido, huellaArchivo, mensajeDuplicado } from 
 import { actualizarGasto, borrarArchivos, insertarGasto, subirArchivos, MAX_ARCHIVO_MB } from "@/lib/db";
 import { desgloseViajeros, repartoUniforme, sumaViajeros, tieneFactura } from "@/lib/transporte";
 import { ArchivoEnlace } from "@/components/archivo-enlace";
+import { DesgloseViajeros } from "@/components/desglose-viajeros";
+
 
 
 import { ExtraccionIA } from "@/components/extraccion-ia";
