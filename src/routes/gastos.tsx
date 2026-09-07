@@ -1,13 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { convertirMoneda } from "@/lib/dinero";
+import { convertirMoneda, redondear, resta } from "@/lib/dinero";
 import { useState } from "react";
 import { useStore, mxn, nuevoId, fechaCorta, esInmutable, hoyISO } from "@/lib/store";
-import type { Archivo, Escala, Gasto, IaExtraccion, TipoComprobante } from "@/lib/types";
+import type { Archivo, Escala, Gasto, IaExtraccion, TipoComprobante, Viajero } from "@/lib/types";
 import { TIPOS_COMPROBANTE } from "@/lib/types";
 import { PAISES, rutaTexto } from "@/lib/paises";
 import { buscarDuplicado, gastoRepetido, huellaArchivo, mensajeDuplicado } from "@/lib/duplicados";
 import { actualizarGasto, borrarArchivos, insertarGasto, subirArchivos, MAX_ARCHIVO_MB } from "@/lib/db";
+import { desgloseViajeros, repartoUniforme, sumaViajeros, tieneFactura } from "@/lib/transporte";
 import { ArchivoEnlace } from "@/components/archivo-enlace";
+
 
 import { ExtraccionIA } from "@/components/extraccion-ia";
 
@@ -215,15 +217,21 @@ function Gastos() {
       return setError("Adjunta la factura (XML/PDF) del CFDI nacional o cambia el tipo de comprobante.");
     }
 
+    if (esTransporte && viajerosSel.length && Math.abs(diferenciaReparto) > 0.01)
+      return setError(
+        `La suma de los importes por viajero (${mxn(sumaIndividual)}) no cuadra con el total del gasto (${mxn(montoMXN)}). Diferencia: ${mxn(diferenciaReparto)}.`,
+      );
+
     const avisosPendientes: string[] = [];
     if (esTransporte) {
       if (!f.origenPais || !f.origenCiudad.trim() || !f.destinoPais || !f.destinoCiudad.trim())
         avisosPendientes.push("faltan datos completos de Origen y Destino");
       if (faltanPases.length)
         avisosPendientes.push(
-          `faltan pases de abordar de: ${faltanPases.map((p) => p.nombre).join(", ")}`,
+          `faltan pases de abordar (ida y regreso) de: ${faltanPases.map(nombreDe).join(", ")}`,
         );
     }
+
 
     // Las validaciones fiscales solo aplican al régimen de CFDI nacional:
     // un comprobante extranjero no tiene RFC ni folio fiscal mexicano.
@@ -249,8 +257,14 @@ function Gastos() {
     }
 
     const adjuntos: Archivo[] = esTransporte
-      ? [...archivos, ...nominales.map((p) => pases[p.id]).filter((a): a is Archivo => Boolean(a))]
+      ? [
+          ...archivos,
+          ...viajerosSel.flatMap((id) =>
+            [pases[id]?.Ida, pases[id]?.Regreso].filter((a): a is Archivo => Boolean(a)),
+          ),
+        ]
       : archivos;
+
 
     const dupDoc = await buscarDuplicado(adjuntos, estado.gastos);
     if (dupDoc) return setError(mensajeDuplicado(dupDoc.archivo, dupDoc.coincidencia));
