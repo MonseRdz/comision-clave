@@ -51,21 +51,35 @@ function Aprobacion() {
 
   const esContralor = usuarioActual.rol === "Contralor";
   const porAprobar = estado.gastos.filter((g) => g.estatus === "Validado por Revisor");
+  const conPagoPendiente = estado.gastos.filter((g) => g.estatus === "Aprobado" && g.pagoPendiente);
+  const nombreDe = (id: string) => estado.usuarios.find((u) => u.id === id)?.nombre ?? "—";
 
-  async function dictaminar(g: Gasto, estatus: "Aprobado" | "Rechazado", motivo?: string) {
+  async function dictaminar(
+    g: Gasto,
+    estatus: "Aprobado" | "Rechazado",
+    motivo?: string,
+    sinPago?: boolean,
+  ) {
     const folio = usuarioActual.rol === "Director" ? delegacionVigente?.folio : undefined;
+    const nota =
+      estatus === "Aprobado"
+        ? sinPago
+          ? " — aprobado con pago pendiente: trazabilidad incompleta hasta cargar el comprobante de pago"
+          : ` — con comprobante de pago por ${mxn(sumaAbonos(g.pago))} (${g.pago?.tipoDesembolso ?? ""})`
+        : "";
     const texto = `Gasto de ${g.proveedor} por ${mxn(g.montoMXN)} ${estatus.toLowerCase()} por ${usuarioActual.nombre}${
       folio ? ` (delegación ${folio})` : ""
-    }${motivo ? ` — motivo: ${motivo}` : ""}.`;
+    }${motivo ? ` — motivo: ${motivo}` : ""}${nota}.`;
     try {
       const guardado = await actualizarGasto(g.id, {
         estatus,
         dictaminador_id: usuarioActual.id,
         motivo_rechazo: estatus === "Rechazado" ? (motivo ?? null) : null,
         folio_delegacion: folio ?? null,
+        pago_pendiente: estatus === "Aprobado" ? Boolean(sinPago) : false,
       });
       aplicarGasto(guardado);
-      await registrar("Dictamen definitivo", texto);
+      await registrar(sinPago ? "Aprobación con pago pendiente" : "Dictamen definitivo", texto);
       setError("");
       setAviso(texto);
     } catch (err: unknown) {
@@ -73,6 +87,7 @@ function Aprobacion() {
       setError(err instanceof Error ? err.message : String(err));
     }
   }
+
 
   async function crearDelegacion(ev: React.FormEvent) {
     ev.preventDefault();
