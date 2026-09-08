@@ -1,9 +1,13 @@
 import { useState } from "react";
-import { actualizarGasto, subirArchivo } from "@/lib/db";
+import { useServerFn } from "@tanstack/react-start";
+import { actualizarGasto, insertarAceptacion, subirArchivo } from "@/lib/db";
 import { ArchivoEnlace } from "./archivo-enlace";
 import { Boton, Campo, Entrada, Selector, Aviso, Etiqueta } from "./glass";
-import { mxn } from "@/lib/store";
+import { mxn, useStore, hoyISO, nuevoId } from "@/lib/store";
 import { abonosSinREP, baseConciliacion, diferenciaPago, sumaAbonos } from "@/lib/pago";
+import { extraerPago } from "@/lib/pago-extraccion.functions";
+import { SERVICIO_IA } from "@/lib/extraccion.functions";
+import { VERSION_CONSENTIMIENTO } from "./extraccion-ia";
 import {
   FORMAS_PAGO,
   TIPOS_DESEMBOLSO,
@@ -14,6 +18,7 @@ import {
   type Gasto,
   type TipoDesembolso,
 } from "@/lib/types";
+
 
 function leerArchivo(file: File): Promise<Archivo> {
   return new Promise((resolve, reject) => {
@@ -26,6 +31,17 @@ function leerArchivo(file: File): Promise<Archivo> {
 }
 
 type Borrador = Omit<ComprobantePago, "abonos">;
+
+/** Señala que el dato lo propuso la lectura por IA y puede corregirse. */
+function MarcaIA({ visible }: { visible: boolean }) {
+  if (!visible) return null;
+  return (
+    <p className="mt-1">
+      <Etiqueta tono="alerta">Propuesto por IA — verifica y corrige si hace falta</Etiqueta>
+    </p>
+  );
+}
+
 
 /**
  * Sección de evidencia bancaria del desembolso. La captura quien dictamina
@@ -57,6 +73,25 @@ export function ComprobantePagoGasto({
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const [leyendo, setLeyendo] = useState(false);
+  const [avisoIA, setAvisoIA] = useState("");
+  /** Campos capturados a mano: la lectura por IA nunca los pisa. */
+  const [tocado, setTocado] = useState<Record<string, boolean>>({});
+  /** Campos que provienen de la lectura por IA, para marcarlos visualmente. */
+  const [deIA, setDeIA] = useState<Record<string, boolean>>({});
+
+  const { estado, setEstado, usuarioActual } = useStore();
+  const extraer = useServerFn(extraerPago);
+  const aceptoIA = estado.aceptaciones.some(
+    (a) => a.usuarioId === usuarioActual.id && a.version === VERSION_CONSENTIMIENTO,
+  );
+
+  /** Marca el campo como capturado a mano y lo actualiza. */
+  const capturar = (campo: keyof Borrador, valor: string) => {
+    setTocado((t) => ({ ...t, [campo]: true }));
+    setDeIA((m) => ({ ...m, [campo]: false }));
+    setD((prev) => ({ ...prev, [campo]: valor }));
+  };
 
   const beneficiarioSugerido =
     d.tipoDesembolso === "Reembolso al comisionado" ? nombreComisionado : gasto.proveedor;
@@ -67,16 +102,84 @@ export function ComprobantePagoGasto({
   const dif = Number((total - base).toFixed(2));
   const faltanREP = abonosSinREP(propuesta);
 
-  async function agregarAbono(lista: FileList | null) {
-    if (!lista?.length) return;
+  async function aceptarConsentimientoIA() {
     try {
-      const nuevos = await Promise.all(Array.from(lista).map(leerArchivo));
-      setAbonos([...abonos, ...nuevos.map((archivo) => ({ archivo, monto: 0 }))]);
-      setError("");
+      const guardado = await insertarAceptacion({
+        id: nuevoId("ia"),
+        usuarioId: usuarioActual.id,
+        fecha: hoyISO(),
+        version: VERSION_CONSENTIMIENTO,
+      });
+      setEstado((e) => ({ ...e, aceptaciones: [...e.aceptaciones, guardado] }));
+      await registrar(
+        "Consentimiento LFPDPPP (IA)",
+        `Aceptó el procesamiento de comprobantes por ${SERVICIO_IA} (${VERSION_CONSENTIMIENTO}).`,
+      );
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     }
   }
+
+  /** Pre-llena con la lectura del comprobante bancario, sin pisar lo capturado a mano. */
+  async function prellenar(archivo: Archivo, indice: number) {
+    if (!aceptoIA) return;
+    setLeyendo(true);
+    setAvisoIA("");
+    try {
+      const r = await extraer({
+        data: {
+          nombre: archivo.nombre,
+          tipo: archivo.tipo,
+          dataUrl: archivo.dataUrl ?? "",
+          beneficiarioEsperado: beneficiarioSugerido,
+        },
+      });
+      if (!r.ok) {
+        setAvisoIA(r.mensaje);
+        return;
+      }
+      const marcados: string[] = [];
+      setD((prev) => {
+        const sig = { ...prev };
+        (["referencia", "cuentaOrdenante", "beneficiario", "fecha"] as const).forEach((k) => {
+          const propuesto = r.campos[k];
+          if (propuesto && !tocado[k] && !prev[k]) {
+            sig[k] = propuesto;
+            marcados.push(k);
+          }
+        });
+        return sig;
+      });
+      if (marcados.length) setDeIA((m) => ({ ...m, ...Object.fromEntries(marcados.map((k) => [k, true])) }));
+      const monto = Number(r.campos.monto);
+      if (monto > 0)
+        setAbonos((prev) => prev.map((a, j) => (j === indice && !(a.monto > 0) ? { ...a, monto } : a)));
+      setAvisoIA(
+        marcados.length || monto > 0
+          ? "Lectura del comprobante: los datos marcados los propuso la IA. Revísalos y corrígelos si hace falta."
+          : "No se pudieron leer datos del comprobante. Captúralos manualmente.",
+      );
+    } catch {
+      setAvisoIA("No se pudo leer el comprobante de pago. Captura los datos manualmente.");
+    } finally {
+      setLeyendo(false);
+    }
+  }
+
+  async function agregarAbono(lista: FileList | null) {
+    if (!lista?.length) return;
+    try {
+      const nuevos = await Promise.all(Array.from(lista).map(leerArchivo));
+      const inicio = abonos.length;
+      setAbonos([...abonos, ...nuevos.map((archivo) => ({ archivo, monto: 0 }))]);
+      setError("");
+      const primero = nuevos[0];
+      if (primero) await prellenar(primero, inicio);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
 
   async function adjuntarREP(i: number, file: File | undefined) {
     if (!file) return;
@@ -146,6 +249,22 @@ export function ComprobantePagoGasto({
       </div>
       {error ? <Aviso tono="error">{error}</Aviso> : null}
       {ok ? <Aviso>{ok}</Aviso> : null}
+      {!aceptoIA ? (
+        <div className="grid gap-2">
+          <Aviso tono="alerta">
+            <strong>Consentimiento LFPDPPP.</strong> Para que el comprobante bancario se lea automáticamente, se
+            envía a un servicio de IA externo: <strong>{SERVICIO_IA}</strong>, únicamente para transcribir sus
+            datos. Puedes capturar todo manualmente sin aceptar.
+          </Aviso>
+          <div>
+            <Boton type="button" onClick={() => void aceptarConsentimientoIA()}>
+              Acepto el procesamiento por IA
+            </Boton>
+          </div>
+        </div>
+      ) : null}
+      {leyendo ? <Aviso>Leyendo el comprobante de pago… (máximo 30 segundos)</Aviso> : null}
+      {avisoIA ? <Aviso tono="alerta">{avisoIA}</Aviso> : null}
 
       <div className="grid gap-3 md:grid-cols-3">
         <Campo etiqueta="Tipo de desembolso" id={`td-${gasto.id}`}>
@@ -175,22 +294,25 @@ export function ComprobantePagoGasto({
             id={`fd-${gasto.id}`}
             type="date"
             value={d.fecha}
-            onChange={(e) => setD({ ...d, fecha: e.target.value })}
+            onChange={(e) => capturar("fecha", e.target.value)}
           />
+          <MarcaIA visible={!!deIA["fecha"]} />
         </Campo>
         <Campo etiqueta="Referencia o clave de rastreo" id={`rf-${gasto.id}`}>
           <Entrada
             id={`rf-${gasto.id}`}
             value={d.referencia}
-            onChange={(e) => setD({ ...d, referencia: e.target.value })}
+            onChange={(e) => capturar("referencia", e.target.value)}
           />
+          <MarcaIA visible={!!deIA["referencia"]} />
         </Campo>
         <Campo etiqueta="Cuenta ordenante (ADEMEBA)" id={`co-${gasto.id}`}>
           <Entrada
             id={`co-${gasto.id}`}
             value={d.cuentaOrdenante}
-            onChange={(e) => setD({ ...d, cuentaOrdenante: e.target.value })}
+            onChange={(e) => capturar("cuentaOrdenante", e.target.value)}
           />
+          <MarcaIA visible={!!deIA["cuentaOrdenante"]} />
         </Campo>
         <Campo
           etiqueta={esProveedor ? "Beneficiario (proveedor)" : "Beneficiario (comisionado)"}
@@ -199,10 +321,12 @@ export function ComprobantePagoGasto({
           <Entrada
             id={`be-${gasto.id}`}
             value={d.beneficiario || beneficiarioSugerido}
-            onChange={(e) => setD({ ...d, beneficiario: e.target.value })}
+            onChange={(e) => capturar("beneficiario", e.target.value)}
           />
+          <MarcaIA visible={!!deIA["beneficiario"]} />
         </Campo>
       </div>
+
 
       {esProveedor ? (
         <label className="flex items-center gap-2 text-sm">
@@ -221,7 +345,7 @@ export function ComprobantePagoGasto({
             id={`ar-${gasto.id}`}
             type="file"
             multiple
-            accept=".pdf,.xml,image/*"
+            accept="image/*,.heic,application/pdf,.pdf,.xml"
             onChange={(e) => {
               void agregarAbono(e.target.files);
               e.target.value = "";
