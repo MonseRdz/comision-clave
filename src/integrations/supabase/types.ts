@@ -184,6 +184,8 @@ export type Database = {
           observaciones: string
           origen_ciudad: string
           origen_pais: string
+          pago: Json
+          pago_pendiente: boolean
           pais_emision: string
           participantes_ids: string[]
           proveedor: string
@@ -220,6 +222,8 @@ export type Database = {
           observaciones?: string
           origen_ciudad?: string
           origen_pais?: string
+          pago?: Json
+          pago_pendiente?: boolean
           pais_emision?: string
           participantes_ids?: string[]
           proveedor?: string
@@ -256,6 +260,8 @@ export type Database = {
           observaciones?: string
           origen_ciudad?: string
           origen_pais?: string
+          pago?: Json
+          pago_pendiente?: boolean
           pais_emision?: string
           participantes_ids?: string[]
           proveedor?: string

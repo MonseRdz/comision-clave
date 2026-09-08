@@ -21,6 +21,7 @@ import {
 } from "@/components/graficas";
 import { DIAS_DEVUELTO, DIAS_EN_DICTAMEN, MAX_ATENCION, PCT_MINIMO_RUBRO } from "@/lib/umbrales";
 import { resumenSinFactura } from "@/lib/sin-factura";
+import { aprobadoConPagoPendiente } from "@/lib/pago";
 
 
 export const Route = createFileRoute("/")({
@@ -186,7 +187,20 @@ function Tablero() {
     }))
     .sort(ordenPorDias);
 
-  filasAtencion.push(...g1, ...g2, ...g3, ...g4);
+  const pagoPendiente = estado.gastos.filter(aprobadoConPagoPendiente);
+  const g5 = pagoPendiente
+    .map<Fila>((g) => ({
+      id: `p${g.id}`,
+      tono: "var(--estado-ambar)",
+      pildora: "Pago pendiente",
+      titulo: `${g.proveedor} · ${g.rubro}`,
+      detalle: "Aprobado sin comprobante de pago · trazabilidad incompleta",
+      monto: mxn(g.montoMXN),
+      dias: diasDesde(g.creadoEn),
+    }))
+    .sort(ordenPorDias);
+
+  filasAtencion.push(...g5, ...g1, ...g2, ...g3, ...g4);
   const atencion = filasAtencion.slice(0, MAX_ATENCION);
 
   const sumaEscrita = `Aprobado (con evidencia) ${mxn(aprobadoTotal)} + En dictamen (con evidencia) ${mxn(dictamenTotal)} + Pendiente por falta de pases ${mxn(faltaPases)} + Sin capturar ${mxn(sinComprobar)} = ${mxn(asignado)} de presupuesto asignado.`;
@@ -223,6 +237,11 @@ function Tablero() {
                 ? `Incluye ${mxn(dictamenTotal)} en dictamen`
                 : "Presupuesto sin respaldo documental"
             }
+          />
+          <Indicador
+            titulo="Aprobados con pago pendiente"
+            valor={String(pagoPendiente.length)}
+            nota={`${mxn(pagoPendiente.reduce((s, g) => suma(s, g.montoMXN), 0))} sin evidencia bancaria`}
           />
           <Indicador
             titulo="Monto en riesgo (+7 días)"

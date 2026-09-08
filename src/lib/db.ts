@@ -101,7 +101,10 @@ export function aGasto(fila: Fila): Gasto {
     observaciones: g["observaciones"] ?? "",
     comisionadoId: g["comisionado_id"] ?? "",
     creadoEn: g["creado_en"],
+    pagoPendiente: Boolean(g["pago_pendiente"]),
   };
+  const pago = g["pago"] as Gasto["pago"] | undefined;
+  if (pago && Object.keys(pago).length) base.pago = pago;
   if (g["revisor_id"]) base.revisorId = g["revisor_id"];
   if (g["dictaminador_id"]) base.dictaminadorId = g["dictaminador_id"];
   if (g["motivo_rechazo"]) base.motivoRechazo = g["motivo_rechazo"];
@@ -152,6 +155,8 @@ export function filaGasto(g: Gasto): Fila {
     uuid_fiscal: g.uuidFiscal ?? null,
     rfc_emisor: g.rfcEmisor ?? null,
     rfc_receptor: g.rfcReceptor ?? null,
+    pago: g.pago ?? {},
+    pago_pendiente: g.pagoPendiente ?? false,
   };
 }
 

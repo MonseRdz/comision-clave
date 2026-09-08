@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useStore, mxn, fechaCorta } from "@/lib/store";
 import { actualizarGasto, actualizarDelegacion, insertarDelegacion } from "@/lib/db";
+import { baseConciliacion, pagoConciliado, sumaAbonos } from "@/lib/pago";
+import { ComprobantePagoGasto } from "@/components/comprobante-pago";
 import type { Gasto } from "@/lib/types";
 import {
   Panel,
@@ -49,21 +51,35 @@ function Aprobacion() {
 
   const esContralor = usuarioActual.rol === "Contralor";
   const porAprobar = estado.gastos.filter((g) => g.estatus === "Validado por Revisor");
+  const conPagoPendiente = estado.gastos.filter((g) => g.estatus === "Aprobado" && g.pagoPendiente);
+  const nombreDe = (id: string) => estado.usuarios.find((u) => u.id === id)?.nombre ?? "—";
 
-  async function dictaminar(g: Gasto, estatus: "Aprobado" | "Rechazado", motivo?: string) {
+  async function dictaminar(
+    g: Gasto,
+    estatus: "Aprobado" | "Rechazado",
+    motivo?: string,
+    sinPago?: boolean,
+  ) {
     const folio = usuarioActual.rol === "Director" ? delegacionVigente?.folio : undefined;
+    const nota =
+      estatus === "Aprobado"
+        ? sinPago
+          ? " — aprobado con pago pendiente: trazabilidad incompleta hasta cargar el comprobante de pago"
+          : ` — con comprobante de pago por ${mxn(sumaAbonos(g.pago))} (${g.pago?.tipoDesembolso ?? ""})`
+        : "";
     const texto = `Gasto de ${g.proveedor} por ${mxn(g.montoMXN)} ${estatus.toLowerCase()} por ${usuarioActual.nombre}${
       folio ? ` (delegación ${folio})` : ""
-    }${motivo ? ` — motivo: ${motivo}` : ""}.`;
+    }${motivo ? ` — motivo: ${motivo}` : ""}${nota}.`;
     try {
       const guardado = await actualizarGasto(g.id, {
         estatus,
         dictaminador_id: usuarioActual.id,
         motivo_rechazo: estatus === "Rechazado" ? (motivo ?? null) : null,
         folio_delegacion: folio ?? null,
+        pago_pendiente: estatus === "Aprobado" ? Boolean(sinPago) : false,
       });
       aplicarGasto(guardado);
-      await registrar("Dictamen definitivo", texto);
+      await registrar(sinPago ? "Aprobación con pago pendiente" : "Dictamen definitivo", texto);
       setError("");
       setAviso(texto);
     } catch (err: unknown) {
@@ -71,6 +87,7 @@ function Aprobacion() {
       setError(err instanceof Error ? err.message : String(err));
     }
   }
+
 
   async function crearDelegacion(ev: React.FormEvent) {
     ev.preventDefault();
@@ -142,7 +159,8 @@ function Aprobacion() {
         ) : null}
         <Tabla cabeceras={["Gasto", "Monto", "Revisor", "Estatus", "Dictamen"]}>
           {porAprobar.map((g) => (
-            <tr key={g.id}>
+            <Fragment key={g.id}>
+            <tr>
               <Celda>
                 <strong>{g.proveedor}</strong>
                 <p className="text-xs text-muted-foreground">
@@ -158,9 +176,30 @@ function Aprobacion() {
               <Celda>
                 {puedeAprobar ? (
                   <div className="flex flex-wrap items-end gap-2">
-                    <Boton variante="exito" onClick={() => dictaminar(g, "Aprobado")}>
-                      Aprobar definitivamente
-                    </Boton>
+                    {pagoConciliado(g) ? (
+                      <Boton variante="exito" onClick={() => dictaminar(g, "Aprobado")}>
+                        Aprobar definitivamente
+                      </Boton>
+                    ) : (
+                      <div className="grid gap-1">
+                        <Boton
+                          variante="exito"
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `El desembolso aún no está comprobado o no concilia con ${mxn(baseConciliacion(g))}. ¿Aprobar con pago pendiente? El gasto quedará marcado con trazabilidad incompleta hasta cargar el comprobante de pago.`,
+                              )
+                            )
+                              void dictaminar(g, "Aprobado", undefined, true);
+                          }}
+                        >
+                          Aprobar con pago pendiente
+                        </Boton>
+                        <span className="text-xs text-muted-foreground">
+                          Para aprobar en firme, carga abajo el comprobante de pago conciliado.
+                        </span>
+                      </div>
+                    )}
                     <Campo etiqueta="Motivo de rechazo" id={`mot-${g.id}`}>
                       <Selector
                         id={`mot-${g.id}`}
@@ -189,12 +228,55 @@ function Aprobacion() {
                 )}
               </Celda>
             </tr>
+            {puedeAprobar ? (
+              <tr>
+                <td colSpan={5} className="px-3 pb-4">
+                  <ComprobantePagoGasto
+                    gasto={g}
+                    nombreComisionado={nombreDe(g.comisionadoId)}
+                    onGuardado={aplicarGasto}
+                    registrar={registrar}
+                  />
+                </td>
+              </tr>
+            ) : null}
+            </Fragment>
           ))}
+
         </Tabla>
         {porAprobar.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">No hay gastos validados en espera de aprobación.</p>
         ) : null}
       </Panel>
+
+      {puedeAprobar && conPagoPendiente.length ? (
+        <Panel>
+          <TituloPanel sub="Gastos aprobados sin evidencia bancaria del desembolso. Carga el comprobante para completar la trazabilidad.">
+            Aprobados con pago pendiente ({conPagoPendiente.length})
+          </TituloPanel>
+          <div className="grid gap-3">
+            {conPagoPendiente.map((g) => (
+              <div key={g.id}>
+                <p className="text-sm font-semibold">
+                  {g.proveedor} · {g.rubro} · {mxn(g.montoMXN)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {estado.eventos.find((e) => e.id === g.eventoId)?.nombre} · comisionado{" "}
+                  {nombreDe(g.comisionadoId)}
+                </p>
+                <ComprobantePagoGasto
+                  gasto={g}
+                  nombreComisionado={nombreDe(g.comisionadoId)}
+                  onGuardado={aplicarGasto}
+                  registrar={registrar}
+                />
+              </div>
+            ))}
+          </div>
+        </Panel>
+      ) : null}
+
+
 
       <Panel>
         <TituloPanel sub="El Contralor delega facultades con vigencia y folio único.">
