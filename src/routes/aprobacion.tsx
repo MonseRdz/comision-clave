@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useStore, mxn, fechaCorta } from "@/lib/store";
 import { actualizarGasto, actualizarDelegacion, insertarDelegacion } from "@/lib/db";
 import { baseConciliacion, pagoConciliado, sumaAbonos } from "@/lib/pago";
@@ -159,8 +159,8 @@ function Aprobacion() {
         ) : null}
         <Tabla cabeceras={["Gasto", "Monto", "Revisor", "Estatus", "Dictamen"]}>
           {porAprobar.map((g) => (
-            <>
-            <tr key={g.id}>
+            <Fragment key={g.id}>
+            <tr>
               <Celda>
                 <strong>{g.proveedor}</strong>
                 <p className="text-xs text-muted-foreground">
@@ -229,7 +229,7 @@ function Aprobacion() {
               </Celda>
             </tr>
             {puedeAprobar ? (
-              <tr key={`${g.id}-pago`}>
+              <tr>
                 <td colSpan={5} className="px-3 pb-4">
                   <ComprobantePagoGasto
                     gasto={g}
@@ -240,7 +240,7 @@ function Aprobacion() {
                 </td>
               </tr>
             ) : null}
-            </>
+            </Fragment>
           ))}
 
         </Tabla>
