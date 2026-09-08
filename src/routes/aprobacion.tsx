@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore, mxn, fechaCorta } from "@/lib/store";
 import { actualizarGasto, actualizarDelegacion, insertarDelegacion } from "@/lib/db";
+import { baseConciliacion, pagoConciliado, sumaAbonos } from "@/lib/pago";
+import { ComprobantePagoGasto } from "@/components/comprobante-pago";
 import type { Gasto } from "@/lib/types";
 import {
   Panel,
