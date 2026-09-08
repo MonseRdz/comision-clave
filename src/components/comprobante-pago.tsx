@@ -62,6 +62,25 @@ export function ComprobantePagoGasto({
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const [leyendo, setLeyendo] = useState(false);
+  const [avisoIA, setAvisoIA] = useState("");
+  /** Campos capturados a mano: la lectura por IA nunca los pisa. */
+  const [tocado, setTocado] = useState<Record<string, boolean>>({});
+  /** Campos que provienen de la lectura por IA, para marcarlos visualmente. */
+  const [deIA, setDeIA] = useState<Record<string, boolean>>({});
+
+  const { estado, setEstado, usuarioActual } = useStore();
+  const extraer = useServerFn(extraerPago);
+  const aceptoIA = estado.aceptaciones.some(
+    (a) => a.usuarioId === usuarioActual.id && a.version === VERSION_CONSENTIMIENTO,
+  );
+
+  /** Marca el campo como capturado a mano y lo actualiza. */
+  const capturar = (campo: keyof Borrador, valor: string) => {
+    setTocado((t) => ({ ...t, [campo]: true }));
+    setDeIA((m) => ({ ...m, [campo]: false }));
+    setD((prev) => ({ ...prev, [campo]: valor }));
+  };
 
   const beneficiarioSugerido =
     d.tipoDesembolso === "Reembolso al comisionado" ? nombreComisionado : gasto.proveedor;
@@ -72,16 +91,84 @@ export function ComprobantePagoGasto({
   const dif = Number((total - base).toFixed(2));
   const faltanREP = abonosSinREP(propuesta);
 
-  async function agregarAbono(lista: FileList | null) {
-    if (!lista?.length) return;
+  async function aceptarConsentimientoIA() {
     try {
-      const nuevos = await Promise.all(Array.from(lista).map(leerArchivo));
-      setAbonos([...abonos, ...nuevos.map((archivo) => ({ archivo, monto: 0 }))]);
-      setError("");
+      const guardado = await insertarAceptacion({
+        id: nuevoId("ia"),
+        usuarioId: usuarioActual.id,
+        fecha: hoyISO(),
+        version: VERSION_CONSENTIMIENTO,
+      });
+      setEstado((e) => ({ ...e, aceptaciones: [...e.aceptaciones, guardado] }));
+      await registrar(
+        "Consentimiento LFPDPPP (IA)",
+        `Aceptó el procesamiento de comprobantes por ${SERVICIO_IA} (${VERSION_CONSENTIMIENTO}).`,
+      );
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     }
   }
+
+  /** Pre-llena con la lectura del comprobante bancario, sin pisar lo capturado a mano. */
+  async function prellenar(archivo: Archivo, indice: number) {
+    if (!aceptoIA) return;
+    setLeyendo(true);
+    setAvisoIA("");
+    try {
+      const r = await extraer({
+        data: {
+          nombre: archivo.nombre,
+          tipo: archivo.tipo,
+          dataUrl: archivo.dataUrl ?? "",
+          beneficiarioEsperado: beneficiarioSugerido,
+        },
+      });
+      if (!r.ok) {
+        setAvisoIA(r.mensaje);
+        return;
+      }
+      const marcados: string[] = [];
+      setD((prev) => {
+        const sig = { ...prev };
+        (["referencia", "cuentaOrdenante", "beneficiario", "fecha"] as const).forEach((k) => {
+          const propuesto = r.campos[k];
+          if (propuesto && !tocado[k] && !prev[k]) {
+            sig[k] = propuesto;
+            marcados.push(k);
+          }
+        });
+        return sig;
+      });
+      if (marcados.length) setDeIA((m) => ({ ...m, ...Object.fromEntries(marcados.map((k) => [k, true])) }));
+      const monto = Number(r.campos.monto);
+      if (monto > 0)
+        setAbonos((prev) => prev.map((a, j) => (j === indice && !(a.monto > 0) ? { ...a, monto } : a)));
+      setAvisoIA(
+        marcados.length || monto > 0
+          ? "Lectura del comprobante: los datos marcados los propuso la IA. Revísalos y corrígelos si hace falta."
+          : "No se pudieron leer datos del comprobante. Captúralos manualmente.",
+      );
+    } catch {
+      setAvisoIA("No se pudo leer el comprobante de pago. Captura los datos manualmente.");
+    } finally {
+      setLeyendo(false);
+    }
+  }
+
+  async function agregarAbono(lista: FileList | null) {
+    if (!lista?.length) return;
+    try {
+      const nuevos = await Promise.all(Array.from(lista).map(leerArchivo));
+      const inicio = abonos.length;
+      setAbonos([...abonos, ...nuevos.map((archivo) => ({ archivo, monto: 0 }))]);
+      setError("");
+      const primero = nuevos[0];
+      if (primero) await prellenar(primero, inicio);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
 
   async function adjuntarREP(i: number, file: File | undefined) {
     if (!file) return;
