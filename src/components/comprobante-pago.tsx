@@ -1,9 +1,13 @@
 import { useState } from "react";
-import { actualizarGasto, subirArchivo } from "@/lib/db";
+import { useServerFn } from "@tanstack/react-start";
+import { actualizarGasto, insertarAceptacion, subirArchivo } from "@/lib/db";
 import { ArchivoEnlace } from "./archivo-enlace";
 import { Boton, Campo, Entrada, Selector, Aviso, Etiqueta } from "./glass";
-import { mxn } from "@/lib/store";
+import { mxn, useStore, hoyISO, nuevoId } from "@/lib/store";
 import { abonosSinREP, baseConciliacion, diferenciaPago, sumaAbonos } from "@/lib/pago";
+import { extraerPago } from "@/lib/pago-extraccion.functions";
+import { SERVICIO_IA } from "@/lib/extraccion.functions";
+import { VERSION_CONSENTIMIENTO } from "./extraccion-ia";
 import {
   FORMAS_PAGO,
   TIPOS_DESEMBOLSO,
@@ -14,6 +18,7 @@ import {
   type Gasto,
   type TipoDesembolso,
 } from "@/lib/types";
+
 
 function leerArchivo(file: File): Promise<Archivo> {
   return new Promise((resolve, reject) => {
