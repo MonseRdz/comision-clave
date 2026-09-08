@@ -21,6 +21,7 @@ import {
 } from "@/components/graficas";
 import { DIAS_DEVUELTO, DIAS_EN_DICTAMEN, MAX_ATENCION, PCT_MINIMO_RUBRO } from "@/lib/umbrales";
 import { resumenSinFactura } from "@/lib/sin-factura";
+import { aprobadoConPagoPendiente } from "@/lib/pago";
 
 
 export const Route = createFileRoute("/")({
