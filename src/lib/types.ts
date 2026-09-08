@@ -53,6 +53,37 @@ export type Archivo = {
 /** Importe individual asignado a un viajero dentro de un gasto de Transporte. */
 export type Viajero = { participanteId: string; importe: number };
 
+/** Cómo se desembolsó el recurso del gasto ya comprobado. */
+export const TIPOS_DESEMBOLSO = [
+  "Pago directo al proveedor",
+  "Reembolso al comisionado",
+] as const;
+export type TipoDesembolso = (typeof TIPOS_DESEMBOLSO)[number];
+
+export const FORMAS_PAGO = ["Transferencia", "Cheque", "Tarjeta", "Otro"] as const;
+export type FormaPago = (typeof FORMAS_PAGO)[number];
+
+/** Un abono del desembolso: su evidencia bancaria, importe y, si aplica, su REP. */
+export type AbonoPago = {
+  archivo: Archivo;
+  monto: number;
+  /** CFDI con complemento de pago (solo cuando la factura es PPD). */
+  rep?: Archivo | undefined;
+};
+
+/** Evidencia bancaria de que ADEMEBA desembolsó el recurso de un gasto. */
+export type ComprobantePago = {
+  tipoDesembolso: TipoDesembolso;
+  formaPago: FormaPago;
+  fecha: string;
+  referencia: string;
+  cuentaOrdenante: string;
+  beneficiario: string;
+  /** La factura del proveedor es PPD y requiere complemento de pago por abono. */
+  esPPD: boolean;
+  abonos: AbonoPago[];
+};
+
 export type Escala = { pais: string; ciudad: string };
 
 
