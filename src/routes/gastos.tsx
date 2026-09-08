@@ -301,6 +301,7 @@ function Gastos() {
       archivos: adjuntos,
 
       estatus: "Borrador",
+      pagoPendiente: false,
       observaciones: "",
       comisionadoId: usuarioActual.id,
       creadoEn: hoyISO(),
