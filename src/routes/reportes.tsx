@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArchivoEnlace } from "@/components/archivo-enlace";
+import { sumaAbonos } from "@/lib/pago";
 import {
   useStore,
   mxn,
@@ -180,6 +181,38 @@ function Reportes() {
                     ) : (
                       "—"
                     )}
+                    <div className="mt-2 border-t border-hair pt-2">
+                      {g.pago ? (
+                        <>
+                          <p className="text-xs text-muted-foreground">
+                            Comprobante de pago · {g.pago.tipoDesembolso} · beneficiario{" "}
+                            {g.pago.beneficiario} · {g.pago.formaPago} · {g.pago.fecha} · ref.{" "}
+                            {g.pago.referencia} · {mxn(sumaAbonos(g.pago))}
+                          </p>
+                          <ul className="grid gap-1">
+                            {g.pago.abonos.map((a, i) => (
+                              <li key={`pago-${i}`} className="flex flex-wrap items-center gap-2">
+                                <Etiqueta tono="neutro">Pago</Etiqueta>
+                                <ArchivoEnlace archivo={a.archivo} />
+                                <span className="text-xs text-muted-foreground">{mxn(a.monto)}</span>
+                                {a.rep ? (
+                                  <>
+                                    <Etiqueta tono="neutro">REP</Etiqueta>
+                                    <ArchivoEnlace archivo={a.rep} />
+                                  </>
+                                ) : null}
+                              </li>
+                            ))}
+                          </ul>
+                        </>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          {g.pagoPendiente
+                            ? "Comprobante de pago pendiente · trazabilidad incompleta"
+                            : "Sin comprobante de pago"}
+                        </p>
+                      )}
+                    </div>
                   </Celda>
                   <Celda>
                     <Etiqueta
