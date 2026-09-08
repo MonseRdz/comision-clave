@@ -238,6 +238,22 @@ export function ComprobantePagoGasto({
       </div>
       {error ? <Aviso tono="error">{error}</Aviso> : null}
       {ok ? <Aviso>{ok}</Aviso> : null}
+      {!aceptoIA ? (
+        <div className="grid gap-2">
+          <Aviso tono="alerta">
+            <strong>Consentimiento LFPDPPP.</strong> Para que el comprobante bancario se lea automáticamente, se
+            envía a un servicio de IA externo: <strong>{SERVICIO_IA}</strong>, únicamente para transcribir sus
+            datos. Puedes capturar todo manualmente sin aceptar.
+          </Aviso>
+          <div>
+            <Boton type="button" onClick={() => void aceptarConsentimientoIA()}>
+              Acepto el procesamiento por IA
+            </Boton>
+          </div>
+        </div>
+      ) : null}
+      {leyendo ? <Aviso>Leyendo el comprobante de pago… (máximo 30 segundos)</Aviso> : null}
+      {avisoIA ? <Aviso tono="alerta">{avisoIA}</Aviso> : null}
 
       <div className="grid gap-3 md:grid-cols-3">
         <Campo etiqueta="Tipo de desembolso" id={`td-${gasto.id}`}>
@@ -267,22 +283,25 @@ export function ComprobantePagoGasto({
             id={`fd-${gasto.id}`}
             type="date"
             value={d.fecha}
-            onChange={(e) => setD({ ...d, fecha: e.target.value })}
+            onChange={(e) => capturar("fecha", e.target.value)}
           />
+          <MarcaIA visible={!!deIA["fecha"]} />
         </Campo>
         <Campo etiqueta="Referencia o clave de rastreo" id={`rf-${gasto.id}`}>
           <Entrada
             id={`rf-${gasto.id}`}
             value={d.referencia}
-            onChange={(e) => setD({ ...d, referencia: e.target.value })}
+            onChange={(e) => capturar("referencia", e.target.value)}
           />
+          <MarcaIA visible={!!deIA["referencia"]} />
         </Campo>
         <Campo etiqueta="Cuenta ordenante (ADEMEBA)" id={`co-${gasto.id}`}>
           <Entrada
             id={`co-${gasto.id}`}
             value={d.cuentaOrdenante}
-            onChange={(e) => setD({ ...d, cuentaOrdenante: e.target.value })}
+            onChange={(e) => capturar("cuentaOrdenante", e.target.value)}
           />
+          <MarcaIA visible={!!deIA["cuentaOrdenante"]} />
         </Campo>
         <Campo
           etiqueta={esProveedor ? "Beneficiario (proveedor)" : "Beneficiario (comisionado)"}
@@ -291,10 +310,12 @@ export function ComprobantePagoGasto({
           <Entrada
             id={`be-${gasto.id}`}
             value={d.beneficiario || beneficiarioSugerido}
-            onChange={(e) => setD({ ...d, beneficiario: e.target.value })}
+            onChange={(e) => capturar("beneficiario", e.target.value)}
           />
+          <MarcaIA visible={!!deIA["beneficiario"]} />
         </Campo>
       </div>
+
 
       {esProveedor ? (
         <label className="flex items-center gap-2 text-sm">
