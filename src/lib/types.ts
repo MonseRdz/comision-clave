@@ -158,6 +158,10 @@ export type Gasto = {
   uuidFiscal?: string | undefined;
   rfcEmisor?: string | undefined;
   rfcReceptor?: string | undefined;
+  /** Evidencia bancaria del desembolso (solo la captura quien dictamina). */
+  pago?: ComprobantePago | undefined;
+  /** Aprobado sin comprobante de pago: trazabilidad incompleta. */
+  pagoPendiente: boolean;
 
 };
 
