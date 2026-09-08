@@ -345,7 +345,7 @@ export function ComprobantePagoGasto({
             id={`ar-${gasto.id}`}
             type="file"
             multiple
-            accept=".pdf,.xml,image/*"
+            accept="image/*,.heic,application/pdf,.pdf,.xml"
             onChange={(e) => {
               void agregarAbono(e.target.files);
               e.target.value = "";
