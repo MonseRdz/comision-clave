@@ -159,6 +159,7 @@ function Aprobacion() {
         ) : null}
         <Tabla cabeceras={["Gasto", "Monto", "Revisor", "Estatus", "Dictamen"]}>
           {porAprobar.map((g) => (
+            <>
             <tr key={g.id}>
               <Celda>
                 <strong>{g.proveedor}</strong>
@@ -175,9 +176,30 @@ function Aprobacion() {
               <Celda>
                 {puedeAprobar ? (
                   <div className="flex flex-wrap items-end gap-2">
-                    <Boton variante="exito" onClick={() => dictaminar(g, "Aprobado")}>
-                      Aprobar definitivamente
-                    </Boton>
+                    {pagoConciliado(g) ? (
+                      <Boton variante="exito" onClick={() => dictaminar(g, "Aprobado")}>
+                        Aprobar definitivamente
+                      </Boton>
+                    ) : (
+                      <div className="grid gap-1">
+                        <Boton
+                          variante="exito"
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `El desembolso aún no está comprobado o no concilia con ${mxn(baseConciliacion(g))}. ¿Aprobar con pago pendiente? El gasto quedará marcado con trazabilidad incompleta hasta cargar el comprobante de pago.`,
+                              )
+                            )
+                              void dictaminar(g, "Aprobado", undefined, true);
+                          }}
+                        >
+                          Aprobar con pago pendiente
+                        </Boton>
+                        <span className="text-xs text-muted-foreground">
+                          Para aprobar en firme, carga abajo el comprobante de pago conciliado.
+                        </span>
+                      </div>
+                    )}
                     <Campo etiqueta="Motivo de rechazo" id={`mot-${g.id}`}>
                       <Selector
                         id={`mot-${g.id}`}
@@ -206,7 +228,21 @@ function Aprobacion() {
                 )}
               </Celda>
             </tr>
+            {puedeAprobar ? (
+              <tr key={`${g.id}-pago`}>
+                <td colSpan={5} className="px-3 pb-4">
+                  <ComprobantePagoGasto
+                    gasto={g}
+                    nombreComisionado={nombreDe(g.comisionadoId)}
+                    onGuardado={aplicarGasto}
+                    registrar={registrar}
+                  />
+                </td>
+              </tr>
+            ) : null}
+            </>
           ))}
+
         </Tabla>
         {porAprobar.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">No hay gastos validados en espera de aprobación.</p>
