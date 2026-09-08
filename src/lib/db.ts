@@ -155,6 +155,8 @@ export function filaGasto(g: Gasto): Fila {
     uuid_fiscal: g.uuidFiscal ?? null,
     rfc_emisor: g.rfcEmisor ?? null,
     rfc_receptor: g.rfcReceptor ?? null,
+    pago: g.pago ?? {},
+    pago_pendiente: g.pagoPendiente ?? false,
   };
 }
 
