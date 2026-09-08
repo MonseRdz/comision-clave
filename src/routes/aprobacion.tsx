@@ -249,6 +249,35 @@ function Aprobacion() {
         ) : null}
       </Panel>
 
+      {puedeAprobar && conPagoPendiente.length ? (
+        <Panel>
+          <TituloPanel sub="Gastos aprobados sin evidencia bancaria del desembolso. Carga el comprobante para completar la trazabilidad.">
+            Aprobados con pago pendiente ({conPagoPendiente.length})
+          </TituloPanel>
+          <div className="grid gap-3">
+            {conPagoPendiente.map((g) => (
+              <div key={g.id}>
+                <p className="text-sm font-semibold">
+                  {g.proveedor} · {g.rubro} · {mxn(g.montoMXN)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {estado.eventos.find((e) => e.id === g.eventoId)?.nombre} · comisionado{" "}
+                  {nombreDe(g.comisionadoId)}
+                </p>
+                <ComprobantePagoGasto
+                  gasto={g}
+                  nombreComisionado={nombreDe(g.comisionadoId)}
+                  onGuardado={aplicarGasto}
+                  registrar={registrar}
+                />
+              </div>
+            ))}
+          </div>
+        </Panel>
+      ) : null}
+
+
+
       <Panel>
         <TituloPanel sub="El Contralor delega facultades con vigencia y folio único.">
           Delegación de autoridad
