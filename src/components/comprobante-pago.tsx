@@ -32,6 +32,17 @@ function leerArchivo(file: File): Promise<Archivo> {
 
 type Borrador = Omit<ComprobantePago, "abonos">;
 
+/** Señala que el dato lo propuso la lectura por IA y puede corregirse. */
+function MarcaIA({ visible }: { visible: boolean }) {
+  if (!visible) return null;
+  return (
+    <p className="mt-1">
+      <Etiqueta tono="alerta">Propuesto por IA — verifica y corrige si hace falta</Etiqueta>
+    </p>
+  );
+}
+
+
 /**
  * Sección de evidencia bancaria del desembolso. La captura quien dictamina
  * (Contralor o Director con delegación vigente); no aparece en la captura del
