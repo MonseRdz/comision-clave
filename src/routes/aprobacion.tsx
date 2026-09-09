@@ -62,13 +62,62 @@ function Aprobacion() {
   const esContralor = usuarioActual.rol === "Contralor";
   const porAprobar = estado.gastos.filter((g) => g.estatus === "Validado por Revisor");
   const conPagoPendiente = estado.gastos.filter((g) => g.estatus === "Aprobado" && g.pagoPendiente);
+  const enDocumentacion = estado.gastos.filter(tieneSaldoEnDocumentacion);
   const nombreDe = (id: string) => estado.usuarios.find((u) => u.id === id)?.nombre ?? "—";
+  const nominalDe = (g: Gasto, id: string) =>
+    estado.eventos.find((e) => e.id === g.eventoId)?.participantes.find((p) => p.id === id)?.nombre ?? id;
+  const saldoForm = (g: Gasto) =>
+    saldos[g.id] ?? { responsableId: g.comisionadoId, fecha: "" };
+
+  /** Aprueba en firme la parte comprobable y manda el resto a documentación. */
+  async function aprobarConSaldo(g: Gasto) {
+    const form = saldoForm(g);
+    const saldo = saldoSinEvidencia(g);
+    if (saldo <= 0) return setError("Este gasto no tiene saldo pendiente por comprobar.");
+    if (!form.responsableId) return setError("Selecciona a quién se le asigna el saldo en documentación.");
+    if (!form.fecha) return setError("Captura la fecha compromiso del saldo en documentación.");
+    const doc: Documentacion = {
+      estatus: "Abierto",
+      monto: saldo,
+      montoInicial: saldo,
+      responsableId: form.responsableId,
+      fechaCompromiso: form.fecha,
+      creadoEn: new Date().toISOString(),
+      creadoPor: usuarioActual.id,
+      cierres: [],
+    };
+    await dictaminar(g, "Aprobado", undefined, !pagoConciliado(g), doc);
+  }
+
+  /** Cierre directo del Contralor: baja el saldo por lo ya respaldado con evidencia. */
+  async function cerrarSaldo(g: Gasto) {
+    const d0 = documentacionAbierta(g);
+    if (!d0) return;
+    const monto = montoPorCerrar(g);
+    if (monto <= 0)
+      return setError(
+        "Aún no llega evidencia nueva que respalde el saldo. Carga los pases faltantes antes de cerrar.",
+      );
+    try {
+      const nueva = documentacionCerrada(d0, monto, usuarioActual.id);
+      const guardado = await actualizarGasto(g.id, { documentacion: nueva });
+      aplicarGasto(guardado);
+      const texto = `Gasto de ${g.proveedor}: el Contralor cerró ${mxn(monto)} del saldo en documentación. Saldo restante: ${mxn(nueva.monto)}.`;
+      await registrar("Cierre de saldo en documentación", texto);
+      setError("");
+      setAviso(texto);
+    } catch (err: unknown) {
+      setAviso("");
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
 
   async function dictaminar(
     g: Gasto,
     estatus: "Aprobado" | "Rechazado",
     motivo?: string,
     sinPago?: boolean,
+    documentacion?: Documentacion,
   ) {
     const folio = usuarioActual.rol === "Director" ? delegacionVigente?.folio : undefined;
     const nota =
