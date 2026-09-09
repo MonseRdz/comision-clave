@@ -3,8 +3,17 @@ import { Fragment, useState } from "react";
 import { useStore, mxn, fechaCorta } from "@/lib/store";
 import { actualizarGasto, actualizarDelegacion, insertarDelegacion } from "@/lib/db";
 import { baseConciliacion, pagoConciliado, sumaAbonos } from "@/lib/pago";
+import {
+  documentacionAbierta,
+  documentacionCerrada,
+  esCandidatoReintegro,
+  faltantesDe,
+  montoPorCerrar,
+  saldoSinEvidencia,
+  tieneSaldoEnDocumentacion,
+} from "@/lib/documentacion";
 import { ComprobantePagoGasto } from "@/components/comprobante-pago";
-import type { Gasto } from "@/lib/types";
+import type { Documentacion, Gasto } from "@/lib/types";
 import {
   Panel,
   TituloPanel,
@@ -40,6 +49,7 @@ function Aprobacion() {
   const { estado, setEstado, aplicarGasto, registrar, usuarioActual, puedeAprobar, delegacionVigente } =
     useStore();
   const [motivos, setMotivos] = useState<Record<string, string>>({});
+  const [saldos, setSaldos] = useState<Record<string, { responsableId: string; fecha: string }>>({});
   const [aviso, setAviso] = useState("");
   const [error, setError] = useState("");
   const [d, setD] = useState({
@@ -52,13 +62,62 @@ function Aprobacion() {
   const esContralor = usuarioActual.rol === "Contralor";
   const porAprobar = estado.gastos.filter((g) => g.estatus === "Validado por Revisor");
   const conPagoPendiente = estado.gastos.filter((g) => g.estatus === "Aprobado" && g.pagoPendiente);
+  const enDocumentacion = estado.gastos.filter(tieneSaldoEnDocumentacion);
   const nombreDe = (id: string) => estado.usuarios.find((u) => u.id === id)?.nombre ?? "—";
+  const nominalDe = (g: Gasto, id: string) =>
+    estado.eventos.find((e) => e.id === g.eventoId)?.participantes.find((p) => p.id === id)?.nombre ?? id;
+  const saldoForm = (g: Gasto) =>
+    saldos[g.id] ?? { responsableId: g.comisionadoId, fecha: "" };
+
+  /** Aprueba en firme la parte comprobable y manda el resto a documentación. */
+  async function aprobarConSaldo(g: Gasto) {
+    const form = saldoForm(g);
+    const saldo = saldoSinEvidencia(g);
+    if (saldo <= 0) return setError("Este gasto no tiene saldo pendiente por comprobar.");
+    if (!form.responsableId) return setError("Selecciona a quién se le asigna el saldo en documentación.");
+    if (!form.fecha) return setError("Captura la fecha compromiso del saldo en documentación.");
+    const doc: Documentacion = {
+      estatus: "Abierto",
+      monto: saldo,
+      montoInicial: saldo,
+      responsableId: form.responsableId,
+      fechaCompromiso: form.fecha,
+      creadoEn: new Date().toISOString(),
+      creadoPor: usuarioActual.id,
+      cierres: [],
+    };
+    await dictaminar(g, "Aprobado", undefined, !pagoConciliado(g), doc);
+  }
+
+  /** Cierre directo del Contralor: baja el saldo por lo ya respaldado con evidencia. */
+  async function cerrarSaldo(g: Gasto) {
+    const d0 = documentacionAbierta(g);
+    if (!d0) return;
+    const monto = montoPorCerrar(g);
+    if (monto <= 0)
+      return setError(
+        "Aún no llega evidencia nueva que respalde el saldo. Carga los pases faltantes antes de cerrar.",
+      );
+    try {
+      const nueva = documentacionCerrada(d0, monto, usuarioActual.id);
+      const guardado = await actualizarGasto(g.id, { documentacion: nueva });
+      aplicarGasto(guardado);
+      const texto = `Gasto de ${g.proveedor}: el Contralor cerró ${mxn(monto)} del saldo en documentación. Saldo restante: ${mxn(nueva.monto)}.`;
+      await registrar("Cierre de saldo en documentación", texto);
+      setError("");
+      setAviso(texto);
+    } catch (err: unknown) {
+      setAviso("");
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
 
   async function dictaminar(
     g: Gasto,
     estatus: "Aprobado" | "Rechazado",
     motivo?: string,
     sinPago?: boolean,
+    documentacion?: Documentacion,
   ) {
     const folio = usuarioActual.rol === "Director" ? delegacionVigente?.folio : undefined;
     const nota =
@@ -69,7 +128,11 @@ function Aprobacion() {
         : "";
     const texto = `Gasto de ${g.proveedor} por ${mxn(g.montoMXN)} ${estatus.toLowerCase()} por ${usuarioActual.nombre}${
       folio ? ` (delegación ${folio})` : ""
-    }${motivo ? ` — motivo: ${motivo}` : ""}${nota}.`;
+    }${motivo ? ` — motivo: ${motivo}` : ""}${nota}${
+      documentacion
+        ? ` — aprobación parcial: ${mxn(documentacion.monto)} pasan a documentación, asignados a ${nombreDe(documentacion.responsableId)} con fecha compromiso ${documentacion.fechaCompromiso}`
+        : ""
+    }.`;
     try {
       const guardado = await actualizarGasto(g.id, {
         estatus,
@@ -77,9 +140,17 @@ function Aprobacion() {
         motivo_rechazo: estatus === "Rechazado" ? (motivo ?? null) : null,
         folio_delegacion: folio ?? null,
         pago_pendiente: estatus === "Aprobado" ? Boolean(sinPago) : false,
+        ...(documentacion ? { documentacion } : {}),
       });
       aplicarGasto(guardado);
-      await registrar(sinPago ? "Aprobación con pago pendiente" : "Dictamen definitivo", texto);
+      await registrar(
+        documentacion
+          ? "Saldo enviado a documentación"
+          : sinPago
+            ? "Aprobación con pago pendiente"
+            : "Dictamen definitivo",
+        texto,
+      );
       setError("");
       setAviso(texto);
     } catch (err: unknown) {
@@ -200,6 +271,55 @@ function Aprobacion() {
                         </span>
                       </div>
                     )}
+                    {saldoSinEvidencia(g) > 0 ? (
+                      <div className="grid w-full gap-2 rounded-md border-2 border-border-strong bg-glass-strong p-2">
+                        <p className="text-xs">
+                          Saldo pendiente por comprobar:{" "}
+                          <strong className="text-warning">{mxn(saldoSinEvidencia(g))}</strong> de{" "}
+                          {mxn(g.montoMXN)}. Falta la evidencia de:{" "}
+                          {faltantesDe(g)
+                            .map((v) => `${nominalDe(g, v.participanteId)} (${v.falta})`)
+                            .join(", ") || "evidencia del total"}
+                          .
+                        </p>
+                        <div className="grid gap-2 md:grid-cols-2">
+                          <Campo etiqueta="Se asigna a" id={`doc-resp-${g.id}`}>
+                            <Selector
+                              id={`doc-resp-${g.id}`}
+                              value={saldoForm(g).responsableId}
+                              onChange={(e) =>
+                                setSaldos((p) => ({
+                                  ...p,
+                                  [g.id]: { ...saldoForm(g), responsableId: e.target.value },
+                                }))
+                              }
+                            >
+                              {estado.usuarios.map((u) => (
+                                <option key={u.id} value={u.id}>
+                                  {u.nombre} ({u.rol})
+                                </option>
+                              ))}
+                            </Selector>
+                          </Campo>
+                          <Campo etiqueta="Fecha compromiso" id={`doc-fecha-${g.id}`}>
+                            <Entrada
+                              id={`doc-fecha-${g.id}`}
+                              type="date"
+                              value={saldoForm(g).fecha}
+                              onChange={(e) =>
+                                setSaldos((p) => ({
+                                  ...p,
+                                  [g.id]: { ...saldoForm(g), fecha: e.target.value },
+                                }))
+                              }
+                            />
+                          </Campo>
+                        </div>
+                        <Boton onClick={() => void aprobarConSaldo(g)}>
+                          Aprobar y enviar el saldo a documentación
+                        </Boton>
+                      </div>
+                    ) : null}
                     <Campo etiqueta="Motivo de rechazo" id={`mot-${g.id}`}>
                       <Selector
                         id={`mot-${g.id}`}
@@ -248,6 +368,69 @@ function Aprobacion() {
           <p className="mt-3 text-sm text-muted-foreground">No hay gastos validados en espera de aprobación.</p>
         ) : null}
       </Panel>
+
+      {puedeAprobar && enDocumentacion.length ? (
+        <Panel>
+          <TituloPanel sub="Saldos de gastos aprobados parcialmente. El Contralor cierra el saldo conforme llega la evidencia, sin pasar por el Revisor.">
+            En documentación ({enDocumentacion.length})
+          </TituloPanel>
+          <Tabla cabeceras={["Gasto", "Saldo en documentación", "Responsable", "Fecha compromiso", "Qué falta", "Cierre"]}>
+            {enDocumentacion.map((g) => {
+              const doc = documentacionAbierta(g);
+              const porCerrar = montoPorCerrar(g);
+              return (
+                <tr key={g.id}>
+                  <Celda>
+                    <strong>{g.proveedor}</strong>
+                    <p className="text-xs text-muted-foreground">
+                      {estado.eventos.find((e) => e.id === g.eventoId)?.nombre} · {g.rubro}
+                    </p>
+                  </Celda>
+                  <Celda>
+                    <span className="cifra font-bold text-warning">{mxn(doc?.monto ?? 0)}</span>
+                    <p className="text-xs text-muted-foreground">de {mxn(g.montoMXN)} del gasto</p>
+                  </Celda>
+                  <Celda>{nombreDe(doc?.responsableId ?? "")}</Celda>
+                  <Celda>
+                    {doc?.fechaCompromiso}
+                    {esCandidatoReintegro(g) ? (
+                      <p className="mt-1">
+                        <Etiqueta tono="error">Candidato a reintegro</Etiqueta>
+                      </p>
+                    ) : null}
+                  </Celda>
+                  <Celda>
+                    <ul className="grid gap-1 text-xs">
+                      {faltantesDe(g).map((v) => (
+                        <li key={v.participanteId}>
+                          {nominalDe(g, v.participanteId)} · falta {v.falta} · {mxn(v.importe)}
+                        </li>
+                      ))}
+                      {faltantesDe(g).length === 0 ? <li>Evidencia completa</li> : null}
+                    </ul>
+                  </Celda>
+                  <Celda>
+                    {porCerrar > 0 ? (
+                      <div className="grid gap-1">
+                        <Boton variante="exito" onClick={() => void cerrarSaldo(g)}>
+                          Cerrar {mxn(porCerrar)} documentados
+                        </Boton>
+                        <span className="text-xs text-muted-foreground">
+                          Ya llegó evidencia que respalda este monto.
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        Sin evidencia nueva por cerrar.
+                      </span>
+                    )}
+                  </Celda>
+                </tr>
+              );
+            })}
+          </Tabla>
+        </Panel>
+      ) : null}
 
       {puedeAprobar && conPagoPendiente.length ? (
         <Panel>

@@ -3,6 +3,13 @@ import { useState } from "react";
 import { ArchivoEnlace } from "@/components/archivo-enlace";
 import { sumaAbonos } from "@/lib/pago";
 import {
+  documentacionAbierta,
+  esCandidatoReintegro,
+  faltantesDe,
+  saldoEnDocumentacion,
+  tieneSaldoEnDocumentacion,
+} from "@/lib/documentacion";
+import {
   useStore,
   mxn,
   diasDesde,
@@ -220,9 +227,41 @@ function Reportes() {
                         g.estatus === "Aprobado" ? "ok" : g.estatus === "Rechazado" ? "error" : "neutro"
                       }
                     >
-                      {g.estatus}
+                      {tieneSaldoEnDocumentacion(g) ? "Aprobado (parcial)" : g.estatus}
                     </Etiqueta>
                     {g.motivoRechazo ? <p className="text-xs">Motivo: {g.motivoRechazo}</p> : null}
+                    {tieneSaldoEnDocumentacion(g) ? (
+                      <div className="mt-1 text-xs">
+                        <p className="font-semibold text-warning">
+                          Saldo en documentación {mxn(saldoEnDocumentacion(g))} · responsable{" "}
+                          {estado.usuarios.find(
+                            (u) => u.id === documentacionAbierta(g)?.responsableId,
+                          )?.nombre ?? "—"}{" "}
+                          · fecha compromiso {documentacionAbierta(g)?.fechaCompromiso}
+                          {esCandidatoReintegro(g) ? " · candidato a reintegro" : ""}
+                        </p>
+                        <ul className="text-muted-foreground">
+                          {faltantesDe(g).map((v) => (
+                            <li key={v.participanteId}>
+                              Falta {v.falta} de{" "}
+                              {evento?.participantes.find((p) => p.id === v.participanteId)?.nombre ??
+                                v.participanteId}{" "}
+                              · {mxn(v.importe)}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                    {(g.documentacion?.cierres ?? []).length ? (
+                      <ul className="mt-1 text-xs text-muted-foreground">
+                        {(g.documentacion?.cierres ?? []).map((c, i) => (
+                          <li key={`c${i}`}>
+                            Saldo cerrado {mxn(c.monto)} el {fechaCorta(c.fecha)} por{" "}
+                            {estado.usuarios.find((u) => u.id === c.actorId)?.nombre ?? "Contralor"}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
                   </Celda>
                   <Celda>
                     {estado.usuarios.find((u) => u.id === g.dictaminadorId)?.nombre ?? "Pendiente"}

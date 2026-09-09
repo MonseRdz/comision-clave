@@ -169,6 +169,7 @@ export type Database = {
           destino_ciudad: string
           destino_pais: string
           dictaminador_id: string | null
+          documentacion: Json
           escalas: Json
           estatus: string
           evento_id: string
@@ -207,6 +208,7 @@ export type Database = {
           destino_ciudad?: string
           destino_pais?: string
           dictaminador_id?: string | null
+          documentacion?: Json
           escalas?: Json
           estatus?: string
           evento_id: string
@@ -245,6 +247,7 @@ export type Database = {
           destino_ciudad?: string
           destino_pais?: string
           dictaminador_id?: string | null
+          documentacion?: Json
           escalas?: Json
           estatus?: string
           evento_id?: string
