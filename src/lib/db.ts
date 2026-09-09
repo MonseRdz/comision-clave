@@ -105,6 +105,8 @@ export function aGasto(fila: Fila): Gasto {
   };
   const pago = g["pago"] as Gasto["pago"] | undefined;
   if (pago && Object.keys(pago).length) base.pago = pago;
+  const doc = g["documentacion"] as Gasto["documentacion"] | undefined;
+  if (doc && Object.keys(doc).length) base.documentacion = doc;
   if (g["revisor_id"]) base.revisorId = g["revisor_id"];
   if (g["dictaminador_id"]) base.dictaminadorId = g["dictaminador_id"];
   if (g["motivo_rechazo"]) base.motivoRechazo = g["motivo_rechazo"];
@@ -157,6 +159,7 @@ export function filaGasto(g: Gasto): Fila {
     rfc_receptor: g.rfcReceptor ?? null,
     pago: g.pago ?? {},
     pago_pendiente: g.pagoPendiente ?? false,
+    documentacion: g.documentacion ?? {},
   };
 }
 
