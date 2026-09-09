@@ -268,6 +268,15 @@ function Tablero() {
             }
           />
           <Indicador
+            titulo="Saldo en documentación"
+            valor={mxn(saldoDocumentacion)}
+            nota={
+              conDocumentacion.length
+                ? `${conDocumentacion.length} gasto(s) aprobados parcialmente · ${vencidos.length} vencido(s)`
+                : "Sin saldos abiertos con fecha compromiso"
+            }
+          />
+          <Indicador
             titulo="Aprobados con pago pendiente"
             valor={String(pagoPendiente.length)}
             nota={`${mxn(pagoPendiente.reduce((s, g) => suma(s, g.montoMXN), 0))} sin evidencia bancaria`}
