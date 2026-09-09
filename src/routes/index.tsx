@@ -22,6 +22,13 @@ import {
 import { DIAS_DEVUELTO, DIAS_EN_DICTAMEN, MAX_ATENCION, PCT_MINIMO_RUBRO } from "@/lib/umbrales";
 import { resumenSinFactura } from "@/lib/sin-factura";
 import { aprobadoConPagoPendiente } from "@/lib/pago";
+import {
+  diasFrenteACompromiso,
+  documentacionAbierta,
+  esCandidatoReintegro,
+  saldoEnDocumentacion,
+  tieneSaldoEnDocumentacion,
+} from "@/lib/documentacion";
 
 
 export const Route = createFileRoute("/")({

@@ -1093,7 +1093,15 @@ function Gastos() {
                 ) : null}
               </Celda>
               <Celda>
-                <Etiqueta tono={tonoEstatus(g.estatus)}>{g.estatus}</Etiqueta>
+                <Etiqueta tono={tonoEstatus(g.estatus)}>
+                  {tieneSaldoEnDocumentacion(g) ? "Aprobado (parcial)" : g.estatus}
+                </Etiqueta>
+                {tieneSaldoEnDocumentacion(g) ? (
+                  <p className="mt-1 text-xs font-semibold text-warning">
+                    {mxn(saldoEnDocumentacion(g))} en documentación · fecha compromiso{" "}
+                    {documentacionAbierta(g)?.fechaCompromiso}
+                  </p>
+                ) : null}
                 {g.estatus === "Devuelto para corrección" && g.observaciones ? (
                   <p className="mt-1 text-xs font-semibold text-warning">
                     Motivo de devolución: {g.observaciones}
