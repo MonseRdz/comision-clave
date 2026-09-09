@@ -49,6 +49,7 @@ function Aprobacion() {
   const { estado, setEstado, aplicarGasto, registrar, usuarioActual, puedeAprobar, delegacionVigente } =
     useStore();
   const [motivos, setMotivos] = useState<Record<string, string>>({});
+  const [saldos, setSaldos] = useState<Record<string, { responsableId: string; fecha: string }>>({});
   const [aviso, setAviso] = useState("");
   const [error, setError] = useState("");
   const [d, setD] = useState({
