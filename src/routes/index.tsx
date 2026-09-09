@@ -207,7 +207,29 @@ function Tablero() {
     }))
     .sort(ordenPorDias);
 
-  filasAtencion.push(...g5, ...g1, ...g2, ...g3, ...g4);
+  // Saldo en documentación: pendiente con dueño y fecha compromiso.
+  const conDocumentacion = estado.gastos.filter(tieneSaldoEnDocumentacion);
+  const saldoDocumentacion = conDocumentacion.reduce((s, g) => suma(s, saldoEnDocumentacion(g)), 0);
+  const vencidos = conDocumentacion.filter(esCandidatoReintegro);
+  const g6 = conDocumentacion
+    .map<Fila>((g) => {
+      const dias = diasFrenteACompromiso(g);
+      const vencido = esCandidatoReintegro(g);
+      return {
+        id: `doc${g.id}`,
+        tono: vencido ? "var(--estado-rojo)" : "var(--estado-ambar)",
+        pildora: vencido ? "Candidato a reintegro" : "En documentación",
+        titulo: `${g.proveedor} · ${g.rubro}`,
+        detalle: `Saldo asignado a ${estado.usuarios.find((u) => u.id === documentacionAbierta(g)?.responsableId)?.nombre ?? "—"} · fecha compromiso ${documentacionAbierta(g)?.fechaCompromiso ?? "—"}${
+          vencido ? ` · vencido hace ${dias} días` : ` · faltan ${Math.abs(dias)} días`
+        }`,
+        monto: mxn(saldoEnDocumentacion(g)),
+        dias: Math.max(dias, 0),
+      };
+    })
+    .sort(ordenPorDias);
+
+  filasAtencion.push(...g6, ...g5, ...g1, ...g2, ...g3, ...g4);
   const atencion = filasAtencion.slice(0, MAX_ATENCION);
 
   const sumaEscrita = `Aprobado (con evidencia) ${mxn(aprobadoTotal)} + En dictamen (con evidencia) ${mxn(dictamenTotal)} + Pendiente por falta de pases ${mxn(faltaPases)} + Sin capturar ${mxn(sinComprobar)} = ${mxn(asignado)} de presupuesto asignado.`;
