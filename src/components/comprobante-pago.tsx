@@ -4,7 +4,7 @@ import { actualizarGasto, insertarAceptacion, subirArchivo } from "@/lib/db";
 import { ArchivoEnlace } from "./archivo-enlace";
 import { Boton, Campo, Entrada, Selector, Aviso, Etiqueta } from "./glass";
 import { mxn, useStore, hoyISO, nuevoId } from "@/lib/store";
-import { abonosSinREP, baseConciliacion, diferenciaPago, sumaAbonos } from "@/lib/pago";
+import { abonosSinREP, baseConciliacion, diferenciaPago, respaldoPorPases, sumaAbonos } from "@/lib/pago";
 import { extraerPago } from "@/lib/pago-extraccion.functions";
 import { SERVICIO_IA } from "@/lib/extraccion.functions";
 import { VERSION_CONSENTIMIENTO } from "./extraccion-ia";
@@ -99,6 +99,7 @@ export function ComprobantePagoGasto({
   const propuesta: ComprobantePago = { ...d, esPPD: esProveedor && d.esPPD, abonos };
   const total = sumaAbonos(propuesta);
   const base = baseConciliacion(gasto);
+  const respaldo = respaldoPorPases(gasto);
   const dif = Number((total - base).toFixed(2));
   const faltanREP = abonosSinREP(propuesta);
 
@@ -340,12 +341,12 @@ export function ComprobantePagoGasto({
       ) : null}
 
       <div className="grid gap-2">
-        <Campo etiqueta="Comprobantes del desembolso (CEP, estado de cuenta, transferencia o cheque)" id={`ar-${gasto.id}`}>
+        <Campo etiqueta="Adjuntar comprobante del depósito (foto o PDF)" id={`ar-${gasto.id}`}>
           <input
             id={`ar-${gasto.id}`}
             type="file"
             multiple
-            accept="image/*,.heic,application/pdf,.pdf,.xml"
+            accept="image/*,application/pdf"
             onChange={(e) => {
               void agregarAbono(e.target.files);
               e.target.value = "";
@@ -355,7 +356,21 @@ export function ComprobantePagoGasto({
         </Campo>
         {abonos.map((a, i) => (
           <div key={`${a.archivo.nombre}-${i}`} className="grid gap-2 rounded-[10px] border border-hair p-2 md:grid-cols-3 md:items-end">
-            <div className="text-sm">
+            <div className="flex items-center gap-2 text-sm">
+              {a.archivo.tipo?.startsWith("image/") && a.archivo.dataUrl ? (
+                <img
+                  src={a.archivo.dataUrl}
+                  alt={`Miniatura de ${a.archivo.nombre}`}
+                  className="h-12 w-12 rounded-[8px] border border-hair object-cover"
+                />
+              ) : (
+                <span
+                  aria-hidden="true"
+                  className="flex h-12 w-12 items-center justify-center rounded-[8px] border border-hair text-[10px]"
+                >
+                  PDF
+                </span>
+              )}
               <ArchivoEnlace archivo={a.archivo} />
             </div>
             <Campo etiqueta="Monto del abono" id={`mo-${gasto.id}-${i}`}>
@@ -399,12 +414,18 @@ export function ComprobantePagoGasto({
       </div>
 
       <p className="text-sm">
-        Desembolsado <strong className="cifra">{mxn(total)}</strong> · conciliar contra{" "}
-        <strong className="cifra">{mxn(base)}</strong>
+        Desembolsado <strong className="cifra">{mxn(total)}</strong> · conciliar contra el total de la
+        factura <strong className="cifra">{mxn(base)}</strong>
       </p>
+      {respaldo !== null ? (
+        <p className="text-xs text-muted-foreground">
+          Indicador aparte: monto respaldado por pases <span className="cifra">{mxn(respaldo)}</span> (no
+          se usa para conciliar el desembolso).
+        </p>
+      ) : null}
       {abonos.length && Math.abs(dif) > 0.01 ? (
         <Aviso tono="alerta">
-          El desembolso no cuadra con el monto a conciliar: diferencia de {mxn(Math.abs(dif))} (
+          El desembolso no cuadra con el total de la factura: diferencia de {mxn(Math.abs(dif))} (
           {dif > 0 ? "de más" : "de menos"}). Es solo un aviso, no bloquea el dictamen.
         </Aviso>
       ) : null}
