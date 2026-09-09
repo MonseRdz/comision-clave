@@ -369,6 +369,69 @@ function Aprobacion() {
         ) : null}
       </Panel>
 
+      {puedeAprobar && enDocumentacion.length ? (
+        <Panel>
+          <TituloPanel sub="Saldos de gastos aprobados parcialmente. El Contralor cierra el saldo conforme llega la evidencia, sin pasar por el Revisor.">
+            En documentación ({enDocumentacion.length})
+          </TituloPanel>
+          <Tabla cabeceras={["Gasto", "Saldo en documentación", "Responsable", "Fecha compromiso", "Qué falta", "Cierre"]}>
+            {enDocumentacion.map((g) => {
+              const doc = documentacionAbierta(g);
+              const porCerrar = montoPorCerrar(g);
+              return (
+                <tr key={g.id}>
+                  <Celda>
+                    <strong>{g.proveedor}</strong>
+                    <p className="text-xs text-muted-foreground">
+                      {estado.eventos.find((e) => e.id === g.eventoId)?.nombre} · {g.rubro}
+                    </p>
+                  </Celda>
+                  <Celda>
+                    <span className="cifra font-bold text-warning">{mxn(doc?.monto ?? 0)}</span>
+                    <p className="text-xs text-muted-foreground">de {mxn(g.montoMXN)} del gasto</p>
+                  </Celda>
+                  <Celda>{nombreDe(doc?.responsableId ?? "")}</Celda>
+                  <Celda>
+                    {doc?.fechaCompromiso}
+                    {esCandidatoReintegro(g) ? (
+                      <p className="mt-1">
+                        <Etiqueta tono="error">Candidato a reintegro</Etiqueta>
+                      </p>
+                    ) : null}
+                  </Celda>
+                  <Celda>
+                    <ul className="grid gap-1 text-xs">
+                      {faltantesDe(g).map((v) => (
+                        <li key={v.participanteId}>
+                          {nominalDe(g, v.participanteId)} · falta {v.falta} · {mxn(v.importe)}
+                        </li>
+                      ))}
+                      {faltantesDe(g).length === 0 ? <li>Evidencia completa</li> : null}
+                    </ul>
+                  </Celda>
+                  <Celda>
+                    {porCerrar > 0 ? (
+                      <div className="grid gap-1">
+                        <Boton variante="exito" onClick={() => void cerrarSaldo(g)}>
+                          Cerrar {mxn(porCerrar)} documentados
+                        </Boton>
+                        <span className="text-xs text-muted-foreground">
+                          Ya llegó evidencia que respalda este monto.
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        Sin evidencia nueva por cerrar.
+                      </span>
+                    )}
+                  </Celda>
+                </tr>
+              );
+            })}
+          </Tabla>
+        </Panel>
+      ) : null}
+
       {puedeAprobar && conPagoPendiente.length ? (
         <Panel>
           <TituloPanel sub="Gastos aprobados sin evidencia bancaria del desembolso. Carga el comprobante para completar la trazabilidad.">
