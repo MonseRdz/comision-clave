@@ -3,8 +3,17 @@ import { Fragment, useState } from "react";
 import { useStore, mxn, fechaCorta } from "@/lib/store";
 import { actualizarGasto, actualizarDelegacion, insertarDelegacion } from "@/lib/db";
 import { baseConciliacion, pagoConciliado, sumaAbonos } from "@/lib/pago";
+import {
+  documentacionAbierta,
+  documentacionCerrada,
+  esCandidatoReintegro,
+  faltantesDe,
+  montoPorCerrar,
+  saldoSinEvidencia,
+  tieneSaldoEnDocumentacion,
+} from "@/lib/documentacion";
 import { ComprobantePagoGasto } from "@/components/comprobante-pago";
-import type { Gasto } from "@/lib/types";
+import type { Documentacion, Gasto } from "@/lib/types";
 import {
   Panel,
   TituloPanel,
