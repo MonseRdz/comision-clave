@@ -128,7 +128,11 @@ function Aprobacion() {
         : "";
     const texto = `Gasto de ${g.proveedor} por ${mxn(g.montoMXN)} ${estatus.toLowerCase()} por ${usuarioActual.nombre}${
       folio ? ` (delegación ${folio})` : ""
-    }${motivo ? ` — motivo: ${motivo}` : ""}${nota}.`;
+    }${motivo ? ` — motivo: ${motivo}` : ""}${nota}${
+      documentacion
+        ? ` — aprobación parcial: ${mxn(documentacion.monto)} pasan a documentación, asignados a ${nombreDe(documentacion.responsableId)} con fecha compromiso ${documentacion.fechaCompromiso}`
+        : ""
+    }.`;
     try {
       const guardado = await actualizarGasto(g.id, {
         estatus,
@@ -136,9 +140,17 @@ function Aprobacion() {
         motivo_rechazo: estatus === "Rechazado" ? (motivo ?? null) : null,
         folio_delegacion: folio ?? null,
         pago_pendiente: estatus === "Aprobado" ? Boolean(sinPago) : false,
+        ...(documentacion ? { documentacion } : {}),
       });
       aplicarGasto(guardado);
-      await registrar(sinPago ? "Aprobación con pago pendiente" : "Dictamen definitivo", texto);
+      await registrar(
+        documentacion
+          ? "Saldo enviado a documentación"
+          : sinPago
+            ? "Aprobación con pago pendiente"
+            : "Dictamen definitivo",
+        texto,
+      );
       setError("");
       setAviso(texto);
     } catch (err: unknown) {
