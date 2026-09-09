@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.proteger_gasto_aprobado() FROM PUBLIC, anon, authenticated;
