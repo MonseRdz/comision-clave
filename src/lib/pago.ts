@@ -8,11 +8,15 @@ export const sumaAbonos = (p: ComprobantePago | undefined) =>
   redondear((p?.abonos ?? []).reduce((s, a) => suma(s, Number(a.monto) || 0), 0));
 
 /**
- * Monto contra el que se concilia el desembolso: el total de la factura, salvo
- * en Transporte, donde manda el monto respaldado por pases (regla por viajero).
+ * Monto contra el que se concilia el desembolso: SIEMPRE el total de la factura,
+ * porque eso es lo que ADEMEBA pagó. El monto respaldado por pases es otro eje
+ * (cuánto es comprobable) y se muestra como indicador aparte.
  */
-export const baseConciliacion = (g: Gasto) =>
-  esGastoTransporte(g) ? montoComprobable(g) : g.montoMXN;
+export const baseConciliacion = (g: Gasto) => g.montoMXN;
+
+/** Monto respaldado por pases (solo Transporte); indicador informativo aparte. */
+export const respaldoPorPases = (g: Gasto) =>
+  esGastoTransporte(g) ? montoComprobable(g) : null;
 
 /** Diferencia entre lo desembolsado y la base de conciliación. */
 export const diferenciaPago = (g: Gasto) => redondear(resta(sumaAbonos(g.pago), baseConciliacion(g)));
