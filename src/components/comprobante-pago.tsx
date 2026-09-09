@@ -99,6 +99,7 @@ export function ComprobantePagoGasto({
   const propuesta: ComprobantePago = { ...d, esPPD: esProveedor && d.esPPD, abonos };
   const total = sumaAbonos(propuesta);
   const base = baseConciliacion(gasto);
+  const respaldo = respaldoPorPases(gasto);
   const dif = Number((total - base).toFixed(2));
   const faltanREP = abonosSinREP(propuesta);
 
