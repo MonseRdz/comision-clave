@@ -84,6 +84,31 @@ export type ComprobantePago = {
   abonos: AbonoPago[];
 };
 
+/** Cierre parcial o total del saldo en documentación, hecho por el Contralor. */
+export type CierreDocumentacion = {
+  fecha: string;
+  monto: number;
+  actorId: string;
+  nota?: string | undefined;
+};
+
+/**
+ * Saldo pendiente por comprobar de un gasto aprobado parcialmente: tiene dueño,
+ * fecha compromiso y salida (se cierra conforme llega la evidencia).
+ */
+export type Documentacion = {
+  estatus: "Abierto" | "Cerrado";
+  /** Saldo vivo en documentación. */
+  monto: number;
+  /** Saldo con el que se abrió la documentación. */
+  montoInicial: number;
+  responsableId: string;
+  fechaCompromiso: string;
+  creadoEn: string;
+  creadoPor: string;
+  cierres: CierreDocumentacion[];
+};
+
 export type Escala = { pais: string; ciudad: string };
 
 
@@ -162,6 +187,8 @@ export type Gasto = {
   pago?: ComprobantePago | undefined;
   /** Aprobado sin comprobante de pago: trazabilidad incompleta. */
   pagoPendiente: boolean;
+  /** Saldo pendiente por comprobar enviado a documentación tras la aprobación. */
+  documentacion?: Documentacion | undefined;
 
 };
 
