@@ -355,7 +355,21 @@ export function ComprobantePagoGasto({
         </Campo>
         {abonos.map((a, i) => (
           <div key={`${a.archivo.nombre}-${i}`} className="grid gap-2 rounded-[10px] border border-hair p-2 md:grid-cols-3 md:items-end">
-            <div className="text-sm">
+            <div className="flex items-center gap-2 text-sm">
+              {a.archivo.tipo?.startsWith("image/") && a.archivo.dataUrl ? (
+                <img
+                  src={a.archivo.dataUrl}
+                  alt={`Miniatura de ${a.archivo.nombre}`}
+                  className="h-12 w-12 rounded-[8px] border border-hair object-cover"
+                />
+              ) : (
+                <span
+                  aria-hidden="true"
+                  className="flex h-12 w-12 items-center justify-center rounded-[8px] border border-hair text-[10px]"
+                >
+                  PDF
+                </span>
+              )}
               <ArchivoEnlace archivo={a.archivo} />
             </div>
             <Campo etiqueta="Monto del abono" id={`mo-${gasto.id}-${i}`}>
