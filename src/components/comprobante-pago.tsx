@@ -340,12 +340,12 @@ export function ComprobantePagoGasto({
       ) : null}
 
       <div className="grid gap-2">
-        <Campo etiqueta="Comprobantes del desembolso (CEP, estado de cuenta, transferencia o cheque)" id={`ar-${gasto.id}`}>
+        <Campo etiqueta="Adjuntar comprobante del depósito (foto o PDF)" id={`ar-${gasto.id}`}>
           <input
             id={`ar-${gasto.id}`}
             type="file"
             multiple
-            accept="image/*,.heic,application/pdf,.pdf,.xml"
+            accept="image/*,application/pdf"
             onChange={(e) => {
               void agregarAbono(e.target.files);
               e.target.value = "";
