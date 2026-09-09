@@ -413,12 +413,18 @@ export function ComprobantePagoGasto({
       </div>
 
       <p className="text-sm">
-        Desembolsado <strong className="cifra">{mxn(total)}</strong> · conciliar contra{" "}
-        <strong className="cifra">{mxn(base)}</strong>
+        Desembolsado <strong className="cifra">{mxn(total)}</strong> · conciliar contra el total de la
+        factura <strong className="cifra">{mxn(base)}</strong>
       </p>
+      {respaldo !== null ? (
+        <p className="text-xs text-muted-foreground">
+          Indicador aparte: monto respaldado por pases <span className="cifra">{mxn(respaldo)}</span> (no
+          se usa para conciliar el desembolso).
+        </p>
+      ) : null}
       {abonos.length && Math.abs(dif) > 0.01 ? (
         <Aviso tono="alerta">
-          El desembolso no cuadra con el monto a conciliar: diferencia de {mxn(Math.abs(dif))} (
+          El desembolso no cuadra con el total de la factura: diferencia de {mxn(Math.abs(dif))} (
           {dif > 0 ? "de más" : "de menos"}). Es solo un aviso, no bloquea el dictamen.
         </Aviso>
       ) : null}
