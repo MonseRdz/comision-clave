@@ -438,10 +438,98 @@ function Gastos() {
       ? estado.gastos
       : estado.gastos.filter((g) => g.comisionadoId === usuarioActual.id);
 
+  // Gastos aprobados que me dejaron un saldo por documentar.
+  const enDocumentacion = estado.gastos.filter(
+    (g) =>
+      tieneSaldoEnDocumentacion(g) &&
+      (usuarioActual.rol === "Contralor" ||
+        g.comisionadoId === usuarioActual.id ||
+        g.documentacion?.responsableId === usuarioActual.id),
+  );
+  const nominalDe = (g: Gasto, id: string) =>
+    estado.eventos.find((e) => e.id === g.eventoId)?.participantes.find((p) => p.id === id)?.nombre ??
+    id;
+
   return (
     <div className="grid gap-4 pt-4">
       {error ? <Aviso tono="error">{error}</Aviso> : null}
       {aviso ? <Aviso>{aviso}</Aviso> : null}
+
+      {enDocumentacion.length ? (
+        <Panel>
+          <TituloPanel sub="Saldos de gastos ya aprobados que siguen esperando su evidencia. Sube los pases faltantes; el resto del gasto está bloqueado.">
+            Documentación pendiente ({enDocumentacion.length})
+          </TituloPanel>
+          <Tabla
+            cabeceras={["Gasto", "Evento", "Monto en documentación", "Qué falta", "Fecha compromiso", ""]}
+          >
+            {enDocumentacion.map((g) => (
+              <tr key={g.id}>
+                <Celda>
+                  <strong>{g.proveedor}</strong>
+                  <p className="text-xs text-muted-foreground">{g.rubro}</p>
+                </Celda>
+                <Celda>{estado.eventos.find((e) => e.id === g.eventoId)?.nombre ?? "—"}</Celda>
+                <Celda>
+                  <span className="cifra font-bold text-warning">{mxn(saldoEnDocumentacion(g))}</span>
+                  <p className="text-xs text-muted-foreground">de {mxn(g.montoMXN)} del gasto</p>
+                </Celda>
+                <Celda>
+                  <ul className="grid gap-1 text-xs">
+                    {faltantesDe(g).map((v) => (
+                      <li key={v.participanteId}>
+                        {nominalDe(g, v.participanteId)} · falta {v.falta} · {mxn(v.importe)}
+                      </li>
+                    ))}
+                    {faltantesDe(g).length === 0 ? (
+                      <li>Evidencia completa · espera el cierre del Contralor</li>
+                    ) : null}
+                  </ul>
+                </Celda>
+                <Celda>
+                  {documentacionAbierta(g)?.fechaCompromiso ?? "—"}
+                  {esCandidatoReintegro(g) ? (
+                    <p className="mt-1">
+                      <Etiqueta tono="error">Vencido · candidato a reintegro</Etiqueta>
+                    </p>
+                  ) : null}
+                </Celda>
+                <Celda>
+                  <Boton
+                    variante="neutro"
+                    onClick={() => {
+                      setError("");
+                      setEvidencia(evidencia === g.id ? null : g.id);
+                    }}
+                  >
+                    {evidencia === g.id ? "Cerrar" : "Completar evidencia"}
+                  </Boton>
+                </Celda>
+              </tr>
+            ))}
+          </Tabla>
+        </Panel>
+      ) : null}
+
+      {(() => {
+        const gastoEvidencia = enDocumentacion.find((g) => g.id === evidencia);
+        return gastoEvidencia ? (
+          <CompletarEvidencia
+            key={gastoEvidencia.id}
+            gasto={gastoEvidencia}
+            onCerrar={() => setEvidencia(null)}
+            onGuardado={(guardado) => {
+              aplicarGasto(guardado);
+              setEvidencia(null);
+              setError("");
+              setAviso(
+                `Evidencia de "${guardado.proveedor}" cargada. El Contralor cerrará el saldo en documentación.`,
+              );
+            }}
+          />
+        ) : null;
+      })()}
+
 
       <ExtraccionIA
         onConfirmar={({ campos, archivo, meta, fiscal: fis }) => {
