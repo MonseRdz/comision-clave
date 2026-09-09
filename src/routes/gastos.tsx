@@ -11,6 +11,14 @@ import { comprobadoDe, esGastoTransporte, pendienteDe, repartoUniforme, sumaViaj
 import { ArchivoEnlace } from "@/components/archivo-enlace";
 import { DesgloseViajeros } from "@/components/desglose-viajeros";
 import { EditarComprobacion, puedeEditarComprobacion } from "@/components/editar-comprobacion";
+import { CompletarEvidencia } from "@/components/completar-evidencia";
+import {
+  documentacionAbierta,
+  esCandidatoReintegro,
+  faltantesDe,
+  saldoEnDocumentacion,
+  tieneSaldoEnDocumentacion,
+} from "@/lib/documentacion";
 
 
 
@@ -94,6 +102,7 @@ function Gastos() {
   const [detalle, setDetalle] = useState<string | null>(null);
   const [edicion, setEdicion] = useState<{ id: string; monto: string } | null>(null);
   const [comprobacion, setComprobacion] = useState<string | null>(null);
+  const [evidencia, setEvidencia] = useState<string | null>(null);
 
   const evento = estado.eventos.find((e) => e.id === f.eventoId);
   const esTransporte = f.rubro === "Transporte";
