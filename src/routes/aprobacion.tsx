@@ -271,6 +271,55 @@ function Aprobacion() {
                         </span>
                       </div>
                     )}
+                    {saldoSinEvidencia(g) > 0 ? (
+                      <div className="grid w-full gap-2 rounded-md border-2 border-border-strong bg-glass-strong p-2">
+                        <p className="text-xs">
+                          Saldo pendiente por comprobar:{" "}
+                          <strong className="text-warning">{mxn(saldoSinEvidencia(g))}</strong> de{" "}
+                          {mxn(g.montoMXN)}. Falta la evidencia de:{" "}
+                          {faltantesDe(g)
+                            .map((v) => `${nominalDe(g, v.participanteId)} (${v.falta})`)
+                            .join(", ") || "evidencia del total"}
+                          .
+                        </p>
+                        <div className="grid gap-2 md:grid-cols-2">
+                          <Campo etiqueta="Se asigna a" id={`doc-resp-${g.id}`}>
+                            <Selector
+                              id={`doc-resp-${g.id}`}
+                              value={saldoForm(g).responsableId}
+                              onChange={(e) =>
+                                setSaldos((p) => ({
+                                  ...p,
+                                  [g.id]: { ...saldoForm(g), responsableId: e.target.value },
+                                }))
+                              }
+                            >
+                              {estado.usuarios.map((u) => (
+                                <option key={u.id} value={u.id}>
+                                  {u.nombre} ({u.rol})
+                                </option>
+                              ))}
+                            </Selector>
+                          </Campo>
+                          <Campo etiqueta="Fecha compromiso" id={`doc-fecha-${g.id}`}>
+                            <Entrada
+                              id={`doc-fecha-${g.id}`}
+                              type="date"
+                              value={saldoForm(g).fecha}
+                              onChange={(e) =>
+                                setSaldos((p) => ({
+                                  ...p,
+                                  [g.id]: { ...saldoForm(g), fecha: e.target.value },
+                                }))
+                              }
+                            />
+                          </Campo>
+                        </div>
+                        <Boton onClick={() => void aprobarConSaldo(g)}>
+                          Aprobar y enviar el saldo a documentación
+                        </Boton>
+                      </div>
+                    ) : null}
                     <Campo etiqueta="Motivo de rechazo" id={`mot-${g.id}`}>
                       <Selector
                         id={`mot-${g.id}`}
