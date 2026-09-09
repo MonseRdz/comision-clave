@@ -4,7 +4,7 @@ import { actualizarGasto, insertarAceptacion, subirArchivo } from "@/lib/db";
 import { ArchivoEnlace } from "./archivo-enlace";
 import { Boton, Campo, Entrada, Selector, Aviso, Etiqueta } from "./glass";
 import { mxn, useStore, hoyISO, nuevoId } from "@/lib/store";
-import { abonosSinREP, baseConciliacion, diferenciaPago, sumaAbonos } from "@/lib/pago";
+import { abonosSinREP, baseConciliacion, diferenciaPago, respaldoPorPases, sumaAbonos } from "@/lib/pago";
 import { extraerPago } from "@/lib/pago-extraccion.functions";
 import { SERVICIO_IA } from "@/lib/extraccion.functions";
 import { VERSION_CONSENTIMIENTO } from "./extraccion-ia";
