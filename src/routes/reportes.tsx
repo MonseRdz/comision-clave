@@ -6,9 +6,12 @@ import {
   documentacionAbierta,
   esCandidatoReintegro,
   faltantesDe,
+  marcadoReintegro,
   saldoEnDocumentacion,
+  saldoReintegro,
   tieneSaldoEnDocumentacion,
 } from "@/lib/documentacion";
+import { EnviarSaldoDocumentacion } from "@/components/enviar-documentacion";
 import {
   useStore,
   mxn,
