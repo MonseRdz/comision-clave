@@ -93,6 +93,31 @@ export function CompletarEvidencia({
     }
   }
 
+  /** El incremento entra al mismo circuito: primero el Revisor, luego el Contralor. */
+  async function enviarIncremento() {
+    if (!doc) return;
+    if (montoPorCerrar(gasto) <= 0)
+      return setError("Aún no hay evidencia nueva que respalde un incremento.");
+    setGuardando(true);
+    try {
+      const guardado = await actualizarGasto(gasto.id, {
+        documentacion: documentacionEnRevision(doc, gasto.comisionadoId),
+      });
+      await registrar(
+        "Incremento enviado a revisión",
+        `Gasto de ${gasto.proveedor}: se envió a validación técnica un incremento de ${mxn(montoPorCerrar(gasto))} sobre el saldo en documentación de ${mxn(saldoEnDocumentacion(gasto))}.`,
+      );
+      setGuardando(false);
+      onGuardado(guardado);
+    } catch (err: unknown) {
+      setGuardando(false);
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  const incremento = incrementoDe(gasto);
+  const porCerrar = montoPorCerrar(gasto);
+
   return (
     <Panel>
       <TituloPanel sub="El gasto ya fue aprobado y es inmutable: solo puedes agregar los pases que faltaban. Importes y datos del gasto están bloqueados.">
@@ -101,13 +126,25 @@ export function CompletarEvidencia({
       {error ? <Aviso tono="error">{error}</Aviso> : null}
       <Aviso tono="alerta">
         Saldo en documentación: <strong>{mxn(saldoEnDocumentacion(gasto))}</strong>
-        {doc?.fechaCompromiso ? ` · fecha compromiso ${doc.fechaCompromiso}` : ""}. Al cargar la
-        evidencia, el Contralor cierra el saldo.
+        {doc?.fechaCompromiso ? ` · fecha compromiso ${doc.fechaCompromiso}` : ""}. Cuando completes
+        la evidencia, envía el incremento a revisión: lo valida el Revisor y después lo aprueba el
+        Contralor.
       </Aviso>
+      {incremento?.observaciones && incremento.estatus === "En captura" ? (
+        <Aviso tono="error">
+          El Revisor devolvió el incremento: {incremento.observaciones}
+        </Aviso>
+      ) : null}
+      {esperaRevisionIncremento(gasto) ? (
+        <Aviso>El incremento está con el Revisor, en validación técnica.</Aviso>
+      ) : null}
+      {incrementoValidado(gasto) ? (
+        <Aviso>El Revisor validó el incremento; espera la aprobación del Contralor.</Aviso>
+      ) : null}
 
       {pendientes.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">
-          La evidencia está completa. El Contralor cerrará el saldo.
+          La evidencia está completa. Envía el incremento a revisión.
         </p>
       ) : (
         <ul className="mt-3 grid gap-2">
