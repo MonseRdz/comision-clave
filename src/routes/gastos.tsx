@@ -12,11 +12,16 @@ import { ArchivoEnlace } from "@/components/archivo-enlace";
 import { DesgloseViajeros } from "@/components/desglose-viajeros";
 import { EditarComprobacion, puedeEditarComprobacion } from "@/components/editar-comprobacion";
 import { CompletarEvidencia } from "@/components/completar-evidencia";
+import { EnviarSaldoDocumentacion } from "@/components/enviar-documentacion";
 import {
   documentacionAbierta,
   esCandidatoReintegro,
   faltantesDe,
+  marcadoReintegro,
   saldoEnDocumentacion,
+  saldoReintegro,
+  saldoSinDestino,
+  saldoSinEvidencia,
   tieneSaldoEnDocumentacion,
 } from "@/lib/documentacion";
 
@@ -1093,13 +1098,22 @@ function Gastos() {
                 ) : null}
               </Celda>
               <Celda>
-                <Etiqueta tono={tonoEstatus(g.estatus)}>
-                  {tieneSaldoEnDocumentacion(g) ? "Aprobado (parcial)" : g.estatus}
-                </Etiqueta>
+                <Etiqueta tono={tonoEstatus(g.estatus)}>{g.estatus}</Etiqueta>
                 {tieneSaldoEnDocumentacion(g) ? (
                   <p className="mt-1 text-xs font-semibold text-warning">
                     {mxn(saldoEnDocumentacion(g))} en documentación · fecha compromiso{" "}
                     {documentacionAbierta(g)?.fechaCompromiso}
+                  </p>
+                ) : null}
+                {marcadoReintegro(g) ? (
+                  <p className="mt-1 text-xs font-semibold text-warning">
+                    {mxn(saldoReintegro(g))} marcados como reintegro
+                  </p>
+                ) : null}
+                <EnviarSaldoDocumentacion gasto={g} />
+                {saldoSinDestino(g) ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Saldo pendiente por comprobar sin destino: {mxn(saldoSinEvidencia(g))}
                   </p>
                 ) : null}
                 {g.estatus === "Devuelto para corrección" && g.observaciones ? (

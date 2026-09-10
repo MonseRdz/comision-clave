@@ -27,6 +27,7 @@ import {
   documentacionAbierta,
   esCandidatoReintegro,
   saldoEnDocumentacion,
+  saldoSinDestino,
   tieneSaldoEnDocumentacion,
 } from "@/lib/documentacion";
 
@@ -598,7 +599,11 @@ function Tablero() {
             const pases = gastosEv
               .filter((g) => cuentaComprobado(g) || cuentaEnDictamen(g))
               .reduce((s, g) => suma(s, pendientePorEvidencia(g)), 0);
-            const pend = gastosEv.filter(estaPendiente);
+            // El saldo aprobado sin comprobar ni reintegrar mantiene el evento en amarillo.
+            const conSaldo = gastosEv.filter(
+              (g) => tieneSaldoEnDocumentacion(g) || saldoSinDestino(g),
+            );
+            const pend = gastosEv.filter((g) => estaPendiente(g) || conSaldo.includes(g));
             const rojo = comp > asig || gastosEv.some((g) => g.estatus === "Rechazado");
             const tono = rojo ? "error" : pend.length ? "alerta" : "ok";
             const texto = rojo ? "Rojo" : pend.length ? "Amarillo" : "Verde";

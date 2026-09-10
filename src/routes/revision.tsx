@@ -6,6 +6,15 @@ import { actualizarGasto, cargarGastosPorEstatus } from "@/lib/db";
 import { ArchivoEnlace } from "@/components/archivo-enlace";
 import { DesgloseViajeros } from "@/components/desglose-viajeros";
 import { comprobadoDe, esGastoTransporte, pendienteDe } from "@/lib/transporte";
+import {
+  documentacionAbierta,
+  documentacionDevuelta,
+  documentacionValidada,
+  esperaRevisionIncremento,
+  faltantesDe,
+  montoPorCerrar,
+  saldoEnDocumentacion,
+} from "@/lib/documentacion";
 
 
 import type { Gasto } from "@/lib/types";
@@ -86,6 +95,36 @@ function Revision() {
           : lista.filter((x) => x.id !== guardado.id),
       );
       await registrar("Dictamen técnico", texto);
+      setError("");
+      setAviso(texto);
+    } catch (err: unknown) {
+      setAviso("");
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  // Incrementos de evidencia sobre gastos ya aprobados con saldo en documentación.
+  const incrementos = estado.gastos.filter(esperaRevisionIncremento);
+  const nominalDe = (g: Gasto, id: string) =>
+    estado.eventos.find((e) => e.id === g.eventoId)?.participantes.find((p) => p.id === id)?.nombre ??
+    id;
+
+  async function dictaminarIncremento(g: Gasto, validar: boolean) {
+    const doc = documentacionAbierta(g);
+    if (!doc) return;
+    const observaciones = (obs[`inc-${g.id}`] ?? "").trim();
+    if (!validar && !observaciones)
+      return setAviso("Escribe una observación antes de devolver el incremento.");
+    const nueva = validar
+      ? documentacionValidada(doc, usuarioActual.id)
+      : documentacionDevuelta(doc, usuarioActual.id, observaciones);
+    const texto = validar
+      ? `Incremento de ${mxn(montoPorCerrar(g))} del gasto de ${g.proveedor} validado técnicamente y enviado al Contralor.`
+      : `Incremento del gasto de ${g.proveedor} devuelto al comisionado: "${observaciones}".`;
+    try {
+      const guardado = await actualizarGasto(g.id, { documentacion: nueva });
+      aplicarGasto(guardado);
+      await registrar("Dictamen técnico del incremento", texto);
       setError("");
       setAviso(texto);
     } catch (err: unknown) {
@@ -228,6 +267,77 @@ function Revision() {
         {pendientes.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">No hay gastos pendientes de validación técnica.</p>
         ) : null}
+      </Panel>
+
+      <Panel>
+        <TituloPanel sub="Evidencia nueva sobre gastos ya aprobados con saldo en documentación. Lo ya aprobado no se toca: solo se valida el incremento antes de que el Contralor lo apruebe.">
+          Incrementos por validar ({incrementos.length})
+        </TituloPanel>
+        <Tabla
+          cabeceras={["Gasto", "Saldo en documentación", "Incremento propuesto", "Evidencia", "Dictamen"]}
+          vacio="No hay incrementos esperando validación técnica."
+        >
+          {incrementos.map((g) => (
+            <tr key={g.id}>
+              <Celda>
+                <strong>{g.proveedor}</strong>
+                <p className="text-xs text-muted-foreground">
+                  {estado.eventos.find((e) => e.id === g.eventoId)?.nombre} · {g.rubro} ·{" "}
+                  {estado.usuarios.find((u) => u.id === g.comisionadoId)?.nombre}
+                </p>
+              </Celda>
+              <Celda>
+                <span className="cifra font-bold text-warning">{mxn(saldoEnDocumentacion(g))}</span>
+                <p className="text-xs text-muted-foreground">
+                  de {mxn(g.montoMXN)} · comprobado {mxn(comprobadoDe(g))}
+                </p>
+              </Celda>
+              <Celda>
+                <span className="cifra font-bold text-success">{mxn(montoPorCerrar(g))}</span>
+                <ul className="mt-1 grid gap-1 text-xs text-muted-foreground">
+                  {faltantesDe(g).map((v) => (
+                    <li key={v.participanteId}>
+                      Sigue faltando {v.falta} de {nominalDe(g, v.participanteId)}
+                    </li>
+                  ))}
+                </ul>
+              </Celda>
+              <Celda>
+                <ul className="space-y-1">
+                  {(g.archivos ?? [])
+                    .filter((a) => a.participanteId)
+                    .map((a, i) => (
+                      <li key={`${a.nombre}-${i}`}>
+                        <ArchivoEnlace archivo={a} etiqueta={`Ver o descargar ${a.nombre}`} />
+                        <span className="text-xs text-muted-foreground">
+                          {" "}
+                          · {nominalDe(g, a.participanteId ?? "")} · {a.tramo ?? "Ida"}
+                        </span>
+                      </li>
+                    ))}
+                </ul>
+              </Celda>
+              <Celda>
+                <Campo etiqueta="Observaciones" id={`obs-inc-${g.id}`}>
+                  <AreaTexto
+                    id={`obs-inc-${g.id}`}
+                    value={obs[`inc-${g.id}`] ?? ""}
+                    onChange={(e) => setObs({ ...obs, [`inc-${g.id}`]: e.target.value })}
+                    placeholder="Ej. El pase de regreso no corresponde al viajero"
+                  />
+                </Campo>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Boton onClick={() => void dictaminarIncremento(g, true)}>
+                    Validar incremento y enviar al Contralor
+                  </Boton>
+                  <Boton variante="peligro" onClick={() => void dictaminarIncremento(g, false)}>
+                    Devolver al comisionado
+                  </Boton>
+                </div>
+              </Celda>
+            </tr>
+          ))}
+        </Tabla>
       </Panel>
     </div>
   );
