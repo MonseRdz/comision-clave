@@ -227,9 +227,15 @@ function Reportes() {
                         g.estatus === "Aprobado" ? "ok" : g.estatus === "Rechazado" ? "error" : "neutro"
                       }
                     >
-                      {tieneSaldoEnDocumentacion(g) ? "Aprobado (parcial)" : g.estatus}
+                      {g.estatus}
                     </Etiqueta>
                     {g.motivoRechazo ? <p className="text-xs">Motivo: {g.motivoRechazo}</p> : null}
+                    {marcadoReintegro(g) ? (
+                      <p className="mt-1 text-xs font-semibold text-warning">
+                        {mxn(saldoReintegro(g))} marcados como reintegro
+                      </p>
+                    ) : null}
+                    <EnviarSaldoDocumentacion gasto={g} />
                     {tieneSaldoEnDocumentacion(g) ? (
                       <div className="mt-1 text-xs">
                         <p className="font-semibold text-warning">
