@@ -89,21 +89,51 @@ function Aprobacion() {
     await dictaminar(g, "Aprobado", undefined, !pagoConciliado(g), doc);
   }
 
-  /** Cierre directo del Contralor: baja el saldo por lo ya respaldado con evidencia. */
-  async function cerrarSaldo(g: Gasto) {
+  /** Aprueba en firme la parte comprobable y marca el resto como reintegro. */
+  async function aprobarConReintegro(g: Gasto) {
+    const form = saldoForm(g);
+    const saldo = saldoSinEvidencia(g);
+    if (saldo <= 0) return setError("Este gasto no tiene saldo pendiente por comprobar.");
+    if (
+      !window.confirm(
+        `¿Aprobar y marcar ${mxn(saldo)} como reintegro? El saldo dejará de esperar evidencia y quedará señalado para su devolución.`,
+      )
+    )
+      return;
+    const doc: Documentacion = {
+      estatus: "Reintegro",
+      monto: saldo,
+      montoInicial: saldo,
+      responsableId: form.responsableId || g.comisionadoId,
+      fechaCompromiso: form.fecha || new Date().toISOString().slice(0, 10),
+      creadoEn: new Date().toISOString(),
+      creadoPor: usuarioActual.id,
+      cierres: [],
+      reintegro: { fecha: new Date().toISOString(), monto: saldo, actorId: usuarioActual.id },
+    };
+    await dictaminar(g, "Aprobado", undefined, !pagoConciliado(g), doc);
+  }
+
+  /**
+   * Aprobación del incremento: solo sube lo que el Revisor ya validó.
+   * Nunca toca el monto del gasto ni lo aprobado previamente.
+   */
+  async function aprobarIncremento(g: Gasto) {
     const d0 = documentacionAbierta(g);
     if (!d0) return;
+    if (!incrementoValidado(g))
+      return setError("El incremento debe pasar primero por la validación técnica del Revisor.");
     const monto = montoPorCerrar(g);
     if (monto <= 0)
       return setError(
-        "Aún no llega evidencia nueva que respalde el saldo. Carga los pases faltantes antes de cerrar.",
+        "Aún no llega evidencia nueva que respalde el saldo. El comisionado debe cargar los pases faltantes.",
       );
     try {
       const nueva = documentacionCerrada(d0, monto, usuarioActual.id);
       const guardado = await actualizarGasto(g.id, { documentacion: nueva });
       aplicarGasto(guardado);
-      const texto = `Gasto de ${g.proveedor}: el Contralor cerró ${mxn(monto)} del saldo en documentación. Saldo restante: ${mxn(nueva.monto)}.`;
-      await registrar("Cierre de saldo en documentación", texto);
+      const texto = `Gasto de ${g.proveedor}: el Contralor aprobó un incremento comprobado de ${mxn(monto)}. Saldo restante en documentación: ${mxn(nueva.monto)}. El monto del gasto y lo aprobado antes no cambian.`;
+      await registrar("Aprobación de incremento comprobado", texto);
       setError("");
       setAviso(texto);
     } catch (err: unknown) {
