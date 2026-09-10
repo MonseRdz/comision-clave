@@ -204,6 +204,16 @@ export function CompletarEvidencia({
         <Boton type="button" onClick={() => void guardar()} disabled={guardando}>
           {guardando ? "Guardando…" : "Guardar evidencia"}
         </Boton>
+        {porCerrar > 0 && !esperaRevisionIncremento(gasto) && !incrementoValidado(gasto) ? (
+          <Boton
+            type="button"
+            variante="exito"
+            onClick={() => void enviarIncremento()}
+            disabled={guardando}
+          >
+            Enviar el incremento a revisión ({mxn(porCerrar)})
+          </Boton>
+        ) : null}
         <Boton type="button" variante="neutro" onClick={onCerrar} disabled={guardando}>
           Cerrar
         </Boton>
