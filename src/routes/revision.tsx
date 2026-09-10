@@ -103,6 +103,36 @@ function Revision() {
     }
   }
 
+  // Incrementos de evidencia sobre gastos ya aprobados con saldo en documentación.
+  const incrementos = estado.gastos.filter(esperaRevisionIncremento);
+  const nominalDe = (g: Gasto, id: string) =>
+    estado.eventos.find((e) => e.id === g.eventoId)?.participantes.find((p) => p.id === id)?.nombre ??
+    id;
+
+  async function dictaminarIncremento(g: Gasto, validar: boolean) {
+    const doc = documentacionAbierta(g);
+    if (!doc) return;
+    const observaciones = (obs[`inc-${g.id}`] ?? "").trim();
+    if (!validar && !observaciones)
+      return setAviso("Escribe una observación antes de devolver el incremento.");
+    const nueva = validar
+      ? documentacionValidada(doc, usuarioActual.id)
+      : documentacionDevuelta(doc, usuarioActual.id, observaciones);
+    const texto = validar
+      ? `Incremento de ${mxn(montoPorCerrar(g))} del gasto de ${g.proveedor} validado técnicamente y enviado al Contralor.`
+      : `Incremento del gasto de ${g.proveedor} devuelto al comisionado: "${observaciones}".`;
+    try {
+      const guardado = await actualizarGasto(g.id, { documentacion: nueva });
+      aplicarGasto(guardado);
+      await registrar("Dictamen técnico del incremento", texto);
+      setError("");
+      setAviso(texto);
+    } catch (err: unknown) {
+      setAviso("");
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
   return (
     <div className="grid gap-4 pt-4">
       {error ? <Aviso tono="error">{error}</Aviso> : null}
