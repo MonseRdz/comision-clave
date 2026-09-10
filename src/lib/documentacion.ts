@@ -139,6 +139,8 @@ export function documentacionCerrada(
     ...d,
     monto: nuevoSaldo,
     estatus: nuevoSaldo > 0 ? "Abierto" : "Cerrado",
+    // El incremento aprobado cierra su ciclo: el siguiente arranca en captura.
+    incremento: undefined,
     cierres: [
       ...(d.cierres ?? []),
       { fecha: new Date().toISOString(), monto: redondear(monto), actorId, ...(nota ? { nota } : {}) },
