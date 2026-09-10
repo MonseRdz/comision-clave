@@ -446,18 +446,27 @@ function Aprobacion() {
                     </ul>
                   </Celda>
                   <Celda>
-                    {porCerrar > 0 ? (
+                    {incrementoValidado(g) && porCerrar > 0 ? (
                       <div className="grid gap-1">
-                        <Boton variante="exito" onClick={() => void cerrarSaldo(g)}>
-                          Cerrar {mxn(porCerrar)} documentados
+                        <Boton variante="exito" onClick={() => void aprobarIncremento(g)}>
+                          Aprobar incremento de {mxn(porCerrar)}
                         </Boton>
                         <span className="text-xs text-muted-foreground">
-                          Ya llegó evidencia que respalda este monto.
+                          Validado por el Revisor. Solo aumenta lo comprobado; el gasto no cambia.
                         </span>
                       </div>
+                    ) : esperaRevisionIncremento(g) ? (
+                      <span className="text-xs text-muted-foreground">
+                        El incremento está con el Revisor, en validación técnica.
+                      </span>
+                    ) : porCerrar > 0 ? (
+                      <span className="text-xs text-muted-foreground">
+                        Hay {mxn(porCerrar)} de evidencia nueva; el comisionado debe enviar el
+                        incremento a revisión.
+                      </span>
                     ) : (
                       <span className="text-xs text-muted-foreground">
-                        Sin evidencia nueva por cerrar.
+                        Sin evidencia nueva por aprobar.
                       </span>
                     )}
                   </Celda>
