@@ -27,6 +27,7 @@ import {
   documentacionAbierta,
   esCandidatoReintegro,
   saldoEnDocumentacion,
+  saldoSinDestino,
   tieneSaldoEnDocumentacion,
 } from "@/lib/documentacion";
 
