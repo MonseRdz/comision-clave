@@ -12,11 +12,16 @@ import { ArchivoEnlace } from "@/components/archivo-enlace";
 import { DesgloseViajeros } from "@/components/desglose-viajeros";
 import { EditarComprobacion, puedeEditarComprobacion } from "@/components/editar-comprobacion";
 import { CompletarEvidencia } from "@/components/completar-evidencia";
+import { EnviarSaldoDocumentacion } from "@/components/enviar-documentacion";
 import {
   documentacionAbierta,
   esCandidatoReintegro,
   faltantesDe,
+  marcadoReintegro,
   saldoEnDocumentacion,
+  saldoReintegro,
+  saldoSinDestino,
+  saldoSinEvidencia,
   tieneSaldoEnDocumentacion,
 } from "@/lib/documentacion";
 
