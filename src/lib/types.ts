@@ -93,11 +93,24 @@ export type CierreDocumentacion = {
 };
 
 /**
+ * Avance del incremento en curso: la evidencia nueva pasa primero por el
+ * Revisor y luego por el Contralor, igual que el dictamen original.
+ */
+export type IncrementoDocumentacion = {
+  estatus: "En captura" | "En revisión" | "Validado por Revisor";
+  enviadoEn?: string | undefined;
+  enviadoPor?: string | undefined;
+  revisorId?: string | undefined;
+  revisadoEn?: string | undefined;
+  observaciones?: string | undefined;
+};
+
+/**
  * Saldo pendiente por comprobar de un gasto aprobado parcialmente: tiene dueño,
  * fecha compromiso y salida (se cierra conforme llega la evidencia).
  */
 export type Documentacion = {
-  estatus: "Abierto" | "Cerrado";
+  estatus: "Abierto" | "Cerrado" | "Reintegro";
   /** Saldo vivo en documentación. */
   monto: number;
   /** Saldo con el que se abrió la documentación. */
@@ -107,6 +120,10 @@ export type Documentacion = {
   creadoEn: string;
   creadoPor: string;
   cierres: CierreDocumentacion[];
+  /** Incremento en circuito de dictamen (Revisor y después Contralor). */
+  incremento?: IncrementoDocumentacion | undefined;
+  /** Marca del saldo enviado a reintegro, cuando no se completó la evidencia. */
+  reintegro?: { fecha: string; monto: number; actorId: string } | undefined;
 };
 
 export type Escala = { pais: string; ciudad: string };
