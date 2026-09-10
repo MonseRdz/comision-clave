@@ -407,7 +407,7 @@ function Aprobacion() {
 
       {puedeAprobar && enDocumentacion.length ? (
         <Panel>
-          <TituloPanel sub="Saldos de gastos aprobados parcialmente. El Contralor cierra el saldo conforme llega la evidencia, sin pasar por el Revisor.">
+          <TituloPanel sub="Saldos pendientes de gastos ya aprobados. La evidencia nueva pasa primero por el Revisor; aquí solo se aprueban los incrementos ya validados. Lo aprobado antes no se modifica.">
             En documentación ({enDocumentacion.length})
           </TituloPanel>
           <Tabla cabeceras={["Gasto", "Saldo en documentación", "Responsable", "Fecha compromiso", "Qué falta", "Cierre"]}>
