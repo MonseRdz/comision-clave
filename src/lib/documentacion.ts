@@ -1,4 +1,4 @@
-import type { Documentacion, Gasto } from "./types";
+import type { Documentacion, Gasto, IncrementoDocumentacion } from "./types";
 import { redondear, resta } from "./dinero";
 import { comprobadoDe, desgloseViajeros } from "./transporte";
 
@@ -20,6 +20,33 @@ export const tieneSaldoEnDocumentacion = (g: Gasto) =>
 export const saldoEnDocumentacion = (g: Gasto) =>
   tieneSaldoEnDocumentacion(g) ? redondear(Number(g.documentacion?.monto) || 0) : 0;
 
+/** El saldo se marcó como reintegro: ya no espera evidencia. */
+export const marcadoReintegro = (g: Gasto) =>
+  g.documentacion?.estatus === "Reintegro" && Number(g.documentacion.monto) > 0;
+
+/** Saldo marcado para reintegro (cero cuando no hay). */
+export const saldoReintegro = (g: Gasto) =>
+  marcadoReintegro(g) ? redondear(Number(g.documentacion?.monto) || 0) : 0;
+
+/**
+ * Gasto aprobado cuyo saldo pendiente no tiene destino: ni documentación
+ * abierta ni marca de reintegro. Nunca debe quedar así.
+ */
+export const saldoSinDestino = (g: Gasto) =>
+  g.estatus === "Aprobado" &&
+  saldoSinEvidencia(g) > 0 &&
+  !documentacionAbierta(g) &&
+  !marcadoReintegro(g);
+
+/** Incremento en circuito de dictamen sobre el saldo abierto. */
+export const incrementoDe = (g: Gasto): IncrementoDocumentacion | null =>
+  documentacionAbierta(g)?.incremento ?? null;
+
+export const esperaRevisionIncremento = (g: Gasto) => incrementoDe(g)?.estatus === "En revisión";
+
+export const incrementoValidado = (g: Gasto) =>
+  incrementoDe(g)?.estatus === "Validado por Revisor";
+
 /** Saldo que ya se puede cerrar porque la evidencia nueva lo respalda. */
 export function montoPorCerrar(g: Gasto): number {
   const d = documentacionAbierta(g);
@@ -27,6 +54,51 @@ export function montoPorCerrar(g: Gasto): number {
   const saldoReal = saldoSinEvidencia(g);
   return Math.max(0, redondear(resta(Number(d.monto) || 0, saldoReal)));
 }
+
+/** Documentación con el incremento enviado a validación técnica del Revisor. */
+export const documentacionEnRevision = (d: Documentacion, actorId: string): Documentacion => ({
+  ...d,
+  incremento: {
+    estatus: "En revisión",
+    enviadoEn: new Date().toISOString(),
+    enviadoPor: actorId,
+  },
+});
+
+/** Documentación con el incremento validado técnicamente por el Revisor. */
+export const documentacionValidada = (d: Documentacion, revisorId: string): Documentacion => ({
+  ...d,
+  incremento: {
+    ...(d.incremento ?? { estatus: "En revisión" }),
+    estatus: "Validado por Revisor",
+    revisorId,
+    revisadoEn: new Date().toISOString(),
+  },
+});
+
+/** Documentación con el incremento devuelto al comisionado por el Revisor. */
+export const documentacionDevuelta = (
+  d: Documentacion,
+  revisorId: string,
+  observaciones: string,
+): Documentacion => ({
+  ...d,
+  incremento: {
+    ...(d.incremento ?? { estatus: "En captura" }),
+    estatus: "En captura",
+    revisorId,
+    revisadoEn: new Date().toISOString(),
+    observaciones,
+  },
+});
+
+/** Documentación con el saldo marcado para reintegro. */
+export const documentacionReintegro = (d: Documentacion, actorId: string): Documentacion => ({
+  ...d,
+  estatus: "Reintegro",
+  incremento: undefined,
+  reintegro: { fecha: new Date().toISOString(), monto: redondear(Number(d.monto) || 0), actorId },
+});
 
 const hoyFecha = () => new Date().toISOString().slice(0, 10);
 
