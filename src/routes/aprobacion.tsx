@@ -247,7 +247,7 @@ function Aprobacion() {
               <Celda>
                 {puedeAprobar ? (
                   <div className="flex flex-wrap items-end gap-2">
-                    {pagoConciliado(g) ? (
+                    {saldoSinEvidencia(g) > 0 ? null : pagoConciliado(g) ? (
                       <Boton variante="exito" onClick={() => dictaminar(g, "Aprobado")}>
                         Aprobar definitivamente
                       </Boton>
@@ -280,7 +280,8 @@ function Aprobacion() {
                           {faltantesDe(g)
                             .map((v) => `${nominalDe(g, v.participanteId)} (${v.falta})`)
                             .join(", ") || "evidencia del total"}
-                          .
+                          . Este saldo no puede quedar sin destino: envíalo a documentación con
+                          fecha compromiso o márcalo como reintegro.
                         </p>
                         <div className="grid gap-2 md:grid-cols-2">
                           <Campo etiqueta="Se asigna a" id={`doc-resp-${g.id}`}>
@@ -301,7 +302,7 @@ function Aprobacion() {
                               ))}
                             </Selector>
                           </Campo>
-                          <Campo etiqueta="Fecha compromiso" id={`doc-fecha-${g.id}`}>
+                          <Campo etiqueta="Fecha compromiso (obligatoria)" id={`doc-fecha-${g.id}`}>
                             <Entrada
                               id={`doc-fecha-${g.id}`}
                               type="date"
@@ -315,9 +316,14 @@ function Aprobacion() {
                             />
                           </Campo>
                         </div>
-                        <Boton onClick={() => void aprobarConSaldo(g)}>
-                          Aprobar y enviar el saldo a documentación
-                        </Boton>
+                        <div className="flex flex-wrap gap-2">
+                          <Boton onClick={() => void aprobarConSaldo(g)}>
+                            Aprobar y enviar el saldo a documentación
+                          </Boton>
+                          <Boton variante="neutro" onClick={() => void aprobarConReintegro(g)}>
+                            Aprobar y marcar el saldo como reintegro
+                          </Boton>
+                        </div>
                       </div>
                     ) : null}
                     <Campo etiqueta="Motivo de rechazo" id={`mot-${g.id}`}>
