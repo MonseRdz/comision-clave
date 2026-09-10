@@ -3,7 +3,16 @@ import { mxn, useStore } from "@/lib/store";
 import { actualizarGasto, borrarArchivos, subirArchivos, MAX_ARCHIVO_MB } from "@/lib/db";
 import { huellaArchivo } from "@/lib/duplicados";
 import { desgloseViajeros } from "@/lib/transporte";
-import { documentacionAbierta, faltantesDe, saldoEnDocumentacion } from "@/lib/documentacion";
+import {
+  documentacionAbierta,
+  documentacionEnRevision,
+  esperaRevisionIncremento,
+  faltantesDe,
+  incrementoDe,
+  incrementoValidado,
+  montoPorCerrar,
+  saldoEnDocumentacion,
+} from "@/lib/documentacion";
 import type { Archivo, Gasto } from "@/lib/types";
 import { ArchivoEnlace } from "@/components/archivo-enlace";
 import { Aviso, Boton, Campo, Etiqueta, Panel, TituloPanel } from "@/components/glass";
