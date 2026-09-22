@@ -300,14 +300,16 @@ function Gastos() {
       }
     }
 
-    const adjuntos: Archivo[] = esTransporte
+    const adjuntos: Archivo[] = esVuelos
       ? [
           ...archivos,
           ...viajerosSel.flatMap((id) =>
             [pases[id]?.Ida, pases[id]?.Regreso].filter((a): a is Archivo => Boolean(a)),
           ),
         ]
-      : archivos;
+      : esTerrestre
+        ? [...archivos, ...[grupo.Ida, grupo.Vuelta].filter((a): a is Archivo => Boolean(a))]
+        : archivos;
 
 
     const dupDoc = await buscarDuplicado(adjuntos, estado.gastos);
