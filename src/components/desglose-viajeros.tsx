@@ -87,6 +87,7 @@ export function ResumenComprobacion({
 /** Desglose por viajero de un gasto de Transporte: importe, pases y pendiente. */
 export function DesgloseViajeros({ gasto }: { gasto: Gasto }) {
   const { estado } = useStore();
+  if (esGastoTerrestre(gasto)) return <EvidenciaTerrestre gasto={gasto} />;
   if (!esGastoVuelos(gasto)) return null;
   const filas = desgloseViajeros(gasto);
   if (!filas.length) return null;
