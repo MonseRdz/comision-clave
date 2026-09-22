@@ -1,19 +1,36 @@
 import type { Archivo, Gasto, Viajero } from "./types";
 import { redondear, resta, suma } from "./dinero";
+import { rubroGrupoRedondo, rubroPorViajero } from "./rubros";
 
-/** Rubro al que aplica la comprobación por viajero. */
-export const RUBRO_TRANSPORTE = "Transporte";
+/** El gasto comprueba por viajero (rubro Vuelos). */
+export const esGastoVuelos = (g: Gasto) => rubroPorViajero(g.rubro);
 
-export const esGastoTransporte = (g: Gasto) => g.rubro === RUBRO_TRANSPORTE;
+/** El gasto comprueba con evidencia de viaje del grupo (Transporte Terrestre). */
+export const esGastoTerrestre = (g: Gasto) => rubroGrupoRedondo(g.rubro);
 
 /**
  * Hay factura que ampara el total cuando el régimen no es "Sin comprobante
- * fiscal" y existe al menos un documento del gasto que no sea un pase de
- * abordar de un viajero.
+ * fiscal" y existe al menos un documento del gasto que no sea evidencia de
+ * viaje: ni pase de abordar de un viajero ni evidencia de grupo con tramo.
  */
 export const tieneFactura = (g: Gasto) =>
   g.tipoComprobante !== "Sin comprobante fiscal" &&
-  (g.archivos ?? []).some((a) => !a.participanteId);
+  (g.archivos ?? []).some((a) => !a.participanteId && !a.tramo);
+
+/** Evidencia de viaje del grupo en un gasto de Transporte Terrestre. */
+export function evidenciaGrupo(g: Gasto): { ida: boolean; vuelta: boolean } {
+  const archivos = g.archivos ?? [];
+  const hay = (tramo: "Ida" | "Vuelta") =>
+    archivos.some((a) => !a.participanteId && a.tramo === tramo);
+  return { ida: hay("Ida"), vuelta: hay("Vuelta") };
+}
+
+/** El gasto terrestre tiene factura y las dos evidencias de viaje del grupo. */
+export function terrestreComprobado(g: Gasto): boolean {
+  if (!tieneFactura(g)) return false;
+  const { ida, vuelta } = evidenciaGrupo(g);
+  return ida && vuelta;
+}
 
 /** Reparto uniforme del total entre los viajeros; el último absorbe el redondeo. */
 export function repartoUniforme(total: number, ids: string[]): Viajero[] {
