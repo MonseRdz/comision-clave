@@ -329,17 +329,17 @@ function Gastos() {
       tipoComprobante: f.tipoComprobante,
       paisEmision: esExtranjero ? f.paisEmision : "",
       justificacion: f.justificacion.trim(),
-      origenPais: esTransporte ? f.origenPais : "",
-      origenCiudad: esTransporte ? f.origenCiudad.trim() : "",
-      destinoPais: esTransporte ? f.destinoPais : "",
-      destinoCiudad: esTransporte ? f.destinoCiudad.trim() : "",
-      escalas: esTransporte
+      origenPais: esTraslado ? f.origenPais : "",
+      origenCiudad: esTraslado ? f.origenCiudad.trim() : "",
+      destinoPais: esTraslado ? f.destinoPais : "",
+      destinoCiudad: esTraslado ? f.destinoCiudad.trim() : "",
+      escalas: esTraslado
         ? escalas
             .filter((x) => x.pais)
             .map((x) => ({ pais: x.pais, ciudad: x.ciudad.trim() }))
         : [],
       participantesIds: participantes,
-      viajeros: esTransporte ? viajeros : [],
+      viajeros: esVuelos ? viajeros : [],
       archivos: adjuntos,
 
       estatus: "Borrador",
