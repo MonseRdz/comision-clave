@@ -1309,6 +1309,12 @@ function Gastos() {
                         )}
                       </li>
                     ) : null}
+                    {rubroRequiereJustificacion(g.rubro) ? (
+                      <li className="text-muted-foreground">
+                        Justificación del concepto:{" "}
+                        <strong>{g.justificacion.trim() || "— sin capturar —"}</strong>
+                      </li>
+                    ) : null}
                     <li className="text-muted-foreground">
                       Tipo de comprobante: <strong>{g.tipoComprobante}</strong>
                       {g.paisEmision
