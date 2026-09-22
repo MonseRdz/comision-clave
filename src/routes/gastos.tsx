@@ -196,6 +196,29 @@ function Gastos() {
     }));
   }
 
+  /** Evidencia de viaje del grupo (Transporte Terrestre): sin participante. */
+  async function cargarEvidenciaGrupo(tramo: "Ida" | "Vuelta", lista: FileList | null) {
+    const file = lista?.[0];
+    if (!file) return;
+    if (file.size > MAX_ARCHIVO_MB * 1024 * 1024)
+      return setError(`El archivo "${file.name}" excede ${MAX_ARCHIVO_MB} MB.`);
+    const leido = await leerArchivo(file);
+    const otros = [
+      ...archivos,
+      ...[grupo.Ida, grupo.Vuelta].filter(
+        (a): a is Archivo => Boolean(a) && a?.tramo !== tramo,
+      ),
+    ];
+    const dup = await buscarDuplicado([leido], estado.gastos);
+    const dupLocal = await buscarDuplicado([leido, ...otros], []);
+    if (dup || dupLocal) {
+      setError(mensajeDuplicado(leido.nombre, dup?.coincidencia ?? null));
+      return;
+    }
+    setError("");
+    setGrupo((prev) => ({ ...prev, [tramo]: { ...leido, tramo } }));
+  }
+
 
   async function cargarArchivos(lista: FileList | null) {
     if (!lista) return;
