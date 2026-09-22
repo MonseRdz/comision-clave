@@ -1182,7 +1182,7 @@ function Gastos() {
               </Celda>
               <Celda>
                 {mxn(g.montoMXN)}
-                {esGastoVuelos(g) ? (
+                {esGastoVuelos(g) || esGastoTerrestre(g) ? (
                   <p className="mt-1 text-xs">
                     <span className="font-semibold text-success">
                       Comprobado {mxn(comprobadoDe(g))}

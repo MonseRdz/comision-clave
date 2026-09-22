@@ -5,7 +5,8 @@ import { useStore, mxn, fechaCorta, diasDesde } from "@/lib/store";
 import { actualizarGasto, cargarGastosPorEstatus } from "@/lib/db";
 import { ArchivoEnlace } from "@/components/archivo-enlace";
 import { DesgloseViajeros } from "@/components/desglose-viajeros";
-import { comprobadoDe, esGastoVuelos, pendienteDe } from "@/lib/transporte";
+import { comprobadoDe, esGastoTerrestre, esGastoVuelos, pendienteDe } from "@/lib/transporte";
+import { rubroRequiereJustificacion } from "@/lib/rubros";
 import {
   documentacionAbierta,
   documentacionDevuelta,
@@ -155,7 +156,7 @@ function Revision() {
                 </Celda>
                 <Celda>
                   {mxn(g.montoMXN)}
-                  {esGastoVuelos(g) ? (
+                  {esGastoVuelos(g) || esGastoTerrestre(g) ? (
                     <p className="mt-1 text-xs">
                       <span className="font-semibold text-success">
                         Comprobado {mxn(comprobadoDe(g))}
@@ -177,6 +178,12 @@ function Revision() {
                 </Celda>
                 <Celda>
                   {g.sinCFDI ? <p>Sin CFDI — {g.justificacion}</p> : null}
+                  {rubroRequiereJustificacion(g.rubro) ? (
+                    <p className="mb-1 text-xs">
+                      <strong>Justificación del concepto:</strong>{" "}
+                      {g.justificacion.trim() || "— sin capturar —"}
+                    </p>
+                  ) : null}
                   {g.archivos.length ? (
                     <ul className="space-y-1">
                       {g.archivos.map((a) => (
