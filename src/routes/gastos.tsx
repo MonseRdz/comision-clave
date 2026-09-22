@@ -894,8 +894,58 @@ function Gastos() {
                     )}
                   </p>
                 ) : null}
-              </div>
+                </div>
+              ) : null}
 
+              {esTerrestre ? (
+                <div className="mt-4">
+                  <p className="text-sm font-semibold">Evidencia de viaje del grupo</p>
+                  <p className="text-sm text-muted-foreground">
+                    Adjunta la lista de asistencia firmada o las fotografías del viaje de ida y del
+                    viaje de vuelta. Son evidencias del grupo, no de cada persona: el gasto se
+                    comprueba completo solo con factura y las dos evidencias.
+                  </p>
+                  <div className="mt-2 grid gap-2 md:grid-cols-2">
+                    {(["Ida", "Vuelta"] as const).map((tramo) => (
+                      <Campo
+                        key={tramo}
+                        etiqueta={`Evidencia del viaje de ${tramo.toLowerCase()}`}
+                        id={`g-grupo-${tramo}`}
+                      >
+                        <input
+                          id={`g-grupo-${tramo}`}
+                          type="file"
+                          accept="image/*,application/pdf"
+                          onChange={(e) => void cargarEvidenciaGrupo(tramo, e.target.files)}
+                          className="w-full rounded-md border-2 border-border-strong bg-input px-3 py-2 text-sm"
+                        />
+                        <span className="mt-1 block text-xs text-muted-foreground">
+                          {grupo[tramo]?.nombre ?? "Pendiente"}
+                        </span>
+                      </Campo>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+            </fieldset>
+          ) : null}
+
+          {pideJustificacion ? (
+            <fieldset className="md:col-span-3 rounded-lg border-2 border-border-strong p-3">
+              <legend className="px-1 text-sm font-semibold">Justificación del concepto</legend>
+              <Campo
+                etiqueta="Justificación escrita (obligatoria en el rubro Otros)"
+                id="g-just-otros"
+                ayuda="Describe con claridad el concepto del gasto: es obligatoria exista o no factura."
+              >
+                <AreaTexto
+                  id="g-just-otros"
+                  value={f.justificacion}
+                  onChange={(e) => setF({ ...f, justificacion: e.target.value })}
+                  placeholder="Ej. Renta de bodega para el equipamiento de la delegación"
+                />
+              </Campo>
             </fieldset>
           ) : null}
 
