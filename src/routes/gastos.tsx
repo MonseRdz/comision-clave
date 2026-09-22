@@ -705,9 +705,9 @@ function Gastos() {
             </Aviso>
           </div>
 
-          {esTransporte ? (
+          {esTraslado ? (
             <fieldset className="md:col-span-3 rounded-lg border-2 border-border-strong p-3">
-              <legend className="px-1 text-sm font-semibold">Traslado (rubro Transporte)</legend>
+              <legend className="px-1 text-sm font-semibold">Traslado (rubro {f.rubro})</legend>
               <div className="grid gap-3 md:grid-cols-2">
                 <Campo etiqueta="País de origen" id="g-op">
                   <Selector id="g-op" value={f.origenPais} onChange={(e) => setF({ ...f, origenPais: e.target.value })}>
