@@ -137,7 +137,7 @@ function Gastos() {
   const ivaNum = f.iva.trim() === "" ? null : Number(f.iva);
   const tc = f.moneda === "MXN" ? 1 : Number(f.tipoCambio) || 0;
   const montoMXN = convertirMoneda(monto, tc);
-  const viajerosSel = esTransporte ? participantes : [];
+  const viajerosSel = esVuelos ? participantes : [];
   const repartoBase = repartoUniforme(montoMXN, viajerosSel);
   const importeDe = (id: string) => {
     const t = importes[id];
@@ -252,20 +252,29 @@ function Gastos() {
       return setError("Adjunta la factura (XML/PDF) del CFDI nacional o cambia el tipo de comprobante.");
     }
 
-    if (esTransporte && viajerosSel.length && Math.abs(diferenciaReparto) > 0.01)
+    if (esVuelos && viajerosSel.length && Math.abs(diferenciaReparto) > 0.01)
       return setError(
         `La suma de los importes por viajero (${mxn(sumaIndividual)}) no cuadra con el total del gasto (${mxn(montoMXN)}). Diferencia: ${mxn(diferenciaReparto)}.`,
       );
 
+    if (pideJustificacion && !f.justificacion.trim())
+      return setError(
+        'En el rubro "Otros" la justificación escrita del concepto es obligatoria, haya o no factura.',
+      );
+
     const avisosPendientes: string[] = [];
-    if (esTransporte) {
+    if (esTraslado) {
       if (!f.origenPais || !f.origenCiudad.trim() || !f.destinoPais || !f.destinoCiudad.trim())
         avisosPendientes.push("faltan datos completos de Origen y Destino");
-      if (faltanPases.length)
-        avisosPendientes.push(
-          `faltan pases de abordar (ida y regreso) de: ${faltanPases.map(nombreDe).join(", ")}`,
-        );
     }
+    if (esVuelos && faltanPases.length)
+      avisosPendientes.push(
+        `faltan pases de abordar (ida y regreso) de: ${faltanPases.map(nombreDe).join(", ")}`,
+      );
+    if (esTerrestre && (!grupo.Ida || !grupo.Vuelta))
+      avisosPendientes.push(
+        `falta la evidencia de viaje del grupo (${!grupo.Ida ? "ida" : ""}${!grupo.Ida && !grupo.Vuelta ? " y " : ""}${!grupo.Vuelta ? "vuelta" : ""})`,
+      );
 
 
     // Las validaciones fiscales solo aplican al régimen de CFDI nacional:
