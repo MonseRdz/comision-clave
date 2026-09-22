@@ -1,5 +1,5 @@
 import { mxn, useStore } from "@/lib/store";
-import { comprobadoDe, desgloseViajeros, esGastoTransporte, pendienteDe, tieneFactura } from "@/lib/transporte";
+import { comprobadoDe, desgloseViajeros, esGastoVuelos, pendienteDe, tieneFactura } from "@/lib/transporte";
 import type { Gasto } from "@/lib/types";
 import { Etiqueta } from "@/components/glass";
 
@@ -37,7 +37,7 @@ export function ResumenComprobacion({
 /** Desglose por viajero de un gasto de Transporte: importe, pases y pendiente. */
 export function DesgloseViajeros({ gasto }: { gasto: Gasto }) {
   const { estado } = useStore();
-  if (!esGastoTransporte(gasto)) return null;
+  if (!esGastoVuelos(gasto)) return null;
   const filas = desgloseViajeros(gasto);
   if (!filas.length) return null;
   const nominales = estado.eventos.find((e) => e.id === gasto.eventoId)?.participantes ?? [];

@@ -1,6 +1,6 @@
 import type { ComprobantePago, Gasto } from "./types";
 import { redondear, resta, suma } from "./dinero";
-import { esGastoTransporte } from "./transporte";
+import { esGastoVuelos } from "./transporte";
 import { montoComprobable } from "./store";
 
 /** Suma de los abonos capturados en el comprobante de pago. */
@@ -16,7 +16,7 @@ export const baseConciliacion = (g: Gasto) => g.montoMXN;
 
 /** Monto respaldado por pases (solo Transporte); indicador informativo aparte. */
 export const respaldoPorPases = (g: Gasto) =>
-  esGastoTransporte(g) ? montoComprobable(g) : null;
+  esGastoVuelos(g) ? montoComprobable(g) : null;
 
 /** Diferencia entre lo desembolsado y la base de conciliación. */
 export const diferenciaPago = (g: Gasto) => redondear(resta(sumaAbonos(g.pago), baseConciliacion(g)));

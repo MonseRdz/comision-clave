@@ -5,7 +5,7 @@ import { useStore, mxn, fechaCorta, diasDesde } from "@/lib/store";
 import { actualizarGasto, cargarGastosPorEstatus } from "@/lib/db";
 import { ArchivoEnlace } from "@/components/archivo-enlace";
 import { DesgloseViajeros } from "@/components/desglose-viajeros";
-import { comprobadoDe, esGastoTransporte, pendienteDe } from "@/lib/transporte";
+import { comprobadoDe, esGastoVuelos, pendienteDe } from "@/lib/transporte";
 import {
   documentacionAbierta,
   documentacionDevuelta,
@@ -155,7 +155,7 @@ function Revision() {
                 </Celda>
                 <Celda>
                   {mxn(g.montoMXN)}
-                  {esGastoTransporte(g) ? (
+                  {esGastoVuelos(g) ? (
                     <p className="mt-1 text-xs">
                       <span className="font-semibold text-success">
                         Comprobado {mxn(comprobadoDe(g))}

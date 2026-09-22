@@ -7,7 +7,7 @@ import { TIPOS_COMPROBANTE } from "@/lib/types";
 import { PAISES, rutaTexto } from "@/lib/paises";
 import { buscarDuplicado, gastoRepetido, huellaArchivo, mensajeDuplicado } from "@/lib/duplicados";
 import { actualizarGasto, borrarArchivos, insertarGasto, subirArchivos, MAX_ARCHIVO_MB } from "@/lib/db";
-import { comprobadoDe, esGastoTransporte, pendienteDe, repartoUniforme, sumaViajeros } from "@/lib/transporte";
+import { comprobadoDe, esGastoVuelos, pendienteDe, repartoUniforme, sumaViajeros } from "@/lib/transporte";
 import { ArchivoEnlace } from "@/components/archivo-enlace";
 import { DesgloseViajeros } from "@/components/desglose-viajeros";
 import { EditarComprobacion, puedeEditarComprobacion } from "@/components/editar-comprobacion";
@@ -1073,7 +1073,7 @@ function Gastos() {
               </Celda>
               <Celda>
                 {mxn(g.montoMXN)}
-                {esGastoTransporte(g) ? (
+                {esGastoVuelos(g) ? (
                   <p className="mt-1 text-xs">
                     <span className="font-semibold text-success">
                       Comprobado {mxn(comprobadoDe(g))}

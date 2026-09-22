@@ -3,7 +3,7 @@ import { mxn, useStore } from "@/lib/store";
 import { convertirMoneda, redondear, resta, suma as suma2 } from "@/lib/dinero";
 import { actualizarGasto, borrarArchivos, subirArchivos, MAX_ARCHIVO_MB } from "@/lib/db";
 import { huellaArchivo } from "@/lib/duplicados";
-import { esGastoTransporte, repartoUniforme, sumaViajeros } from "@/lib/transporte";
+import { esGastoVuelos, repartoUniforme, sumaViajeros } from "@/lib/transporte";
 import type { Archivo, Gasto, TipoComprobante, Viajero } from "@/lib/types";
 import { TIPOS_COMPROBANTE } from "@/lib/types";
 import { ArchivoEnlace } from "@/components/archivo-enlace";
@@ -16,7 +16,7 @@ type Pases = Record<string, { Ida?: Archivo | undefined; Regreso?: Archivo | und
 
 /** Un gasto solo se corrige mientras no haya sido dictaminado. */
 export const puedeEditarComprobacion = (g: Gasto) =>
-  esGastoTransporte(g) && (g.estatus === "Borrador" || g.estatus === "Devuelto para corrección");
+  esGastoVuelos(g) && (g.estatus === "Borrador" || g.estatus === "Devuelto para corrección");
 
 const tramoDe = (a: Archivo): Tramo => (a.tramo === "Regreso" ? "Regreso" : "Ida");
 
