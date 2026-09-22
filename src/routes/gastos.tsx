@@ -110,6 +110,7 @@ function Gastos() {
   const [archivos, setArchivos] = useState<Archivo[]>([]);
   const [pases, setPases] = useState<Record<string, { Ida?: Archivo; Regreso?: Archivo }>>({});
   const [importes, setImportes] = useState<Record<string, string>>({});
+  const [grupo, setGrupo] = useState<{ Ida?: Archivo; Vuelta?: Archivo }>({});
 
   const [aviso, setAviso] = useState("");
   const [error, setError] = useState("");
@@ -123,7 +124,10 @@ function Gastos() {
   const [evidencia, setEvidencia] = useState<string | null>(null);
 
   const evento = estado.eventos.find((e) => e.id === f.eventoId);
-  const esTransporte = f.rubro === "Transporte";
+  const esVuelos = rubroPorViajero(f.rubro);
+  const esTerrestre = rubroGrupoRedondo(f.rubro);
+  const esTraslado = rubroConTraslado(f.rubro);
+  const pideJustificacion = rubroRequiereJustificacion(f.rubro);
   const esCFDI = f.tipoComprobante === "CFDI nacional";
   const esExtranjero = f.tipoComprobante === "Comprobante extranjero";
   const esSinComprobante = f.tipoComprobante === "Sin comprobante fiscal";
