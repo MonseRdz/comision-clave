@@ -438,6 +438,7 @@ function Gastos() {
     setParticipantes([]);
     setArchivos([]);
     setPases({});
+    setGrupo({});
     setImportes({});
 
     setIaMeta(null);
@@ -447,6 +448,12 @@ function Gastos() {
 
   async function enviarARevision(g: Gasto) {
     if (g.estatus !== "Borrador" && g.estatus !== "Devuelto para corrección") return;
+    if (rubroRequiereJustificacion(g.rubro) && !g.justificacion.trim()) {
+      setAviso("");
+      return setError(
+        `El gasto de "${g.proveedor}" es del rubro ${g.rubro}: captura la justificación escrita del concepto antes de enviarlo a revisión.`,
+      );
+    }
     const primero = g.estatus === "Borrador";
     try {
       const guardado = await actualizarGasto(g.id, { estatus: "Registrado" });
