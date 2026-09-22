@@ -46,8 +46,12 @@ export type Archivo = {
   dataUrl?: string | undefined;
   /** Participante al que corresponde el pase de abordar, si aplica. */
   participanteId?: string | undefined;
-  /** Tramo del pase de abordar. Los pases antiguos sin tramo cuentan como ida. */
-  tramo?: "Ida" | "Regreso" | undefined;
+  /**
+   * Tramo del viaje. En Vuelos marca el pase de abordar del viajero (Ida o
+   * Regreso); en Transporte Terrestre marca la evidencia del grupo (Ida o
+   * Vuelta) y va sin participante. Los pases antiguos sin tramo cuentan como ida.
+   */
+  tramo?: "Ida" | "Regreso" | "Vuelta" | undefined;
 };
 
 /** Importe individual asignado a un viajero dentro de un gasto de Transporte. */
