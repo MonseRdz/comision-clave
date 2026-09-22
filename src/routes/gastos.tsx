@@ -7,7 +7,20 @@ import { TIPOS_COMPROBANTE } from "@/lib/types";
 import { PAISES, rutaTexto } from "@/lib/paises";
 import { buscarDuplicado, gastoRepetido, huellaArchivo, mensajeDuplicado } from "@/lib/duplicados";
 import { actualizarGasto, borrarArchivos, insertarGasto, subirArchivos, MAX_ARCHIVO_MB } from "@/lib/db";
-import { comprobadoDe, esGastoTransporte, pendienteDe, repartoUniforme, sumaViajeros } from "@/lib/transporte";
+import {
+  comprobadoDe,
+  esGastoTerrestre,
+  esGastoVuelos,
+  pendienteDe,
+  repartoUniforme,
+  sumaViajeros,
+} from "@/lib/transporte";
+import {
+  rubroConTraslado,
+  rubroGrupoRedondo,
+  rubroPorViajero,
+  rubroRequiereJustificacion,
+} from "@/lib/rubros";
 import { ArchivoEnlace } from "@/components/archivo-enlace";
 import { DesgloseViajeros } from "@/components/desglose-viajeros";
 import { EditarComprobacion, puedeEditarComprobacion } from "@/components/editar-comprobacion";
@@ -97,6 +110,7 @@ function Gastos() {
   const [archivos, setArchivos] = useState<Archivo[]>([]);
   const [pases, setPases] = useState<Record<string, { Ida?: Archivo; Regreso?: Archivo }>>({});
   const [importes, setImportes] = useState<Record<string, string>>({});
+  const [grupo, setGrupo] = useState<{ Ida?: Archivo; Vuelta?: Archivo }>({});
 
   const [aviso, setAviso] = useState("");
   const [error, setError] = useState("");
@@ -110,7 +124,10 @@ function Gastos() {
   const [evidencia, setEvidencia] = useState<string | null>(null);
 
   const evento = estado.eventos.find((e) => e.id === f.eventoId);
-  const esTransporte = f.rubro === "Transporte";
+  const esVuelos = rubroPorViajero(f.rubro);
+  const esTerrestre = rubroGrupoRedondo(f.rubro);
+  const esTraslado = rubroConTraslado(f.rubro);
+  const pideJustificacion = rubroRequiereJustificacion(f.rubro);
   const esCFDI = f.tipoComprobante === "CFDI nacional";
   const esExtranjero = f.tipoComprobante === "Comprobante extranjero";
   const esSinComprobante = f.tipoComprobante === "Sin comprobante fiscal";
@@ -120,7 +137,7 @@ function Gastos() {
   const ivaNum = f.iva.trim() === "" ? null : Number(f.iva);
   const tc = f.moneda === "MXN" ? 1 : Number(f.tipoCambio) || 0;
   const montoMXN = convertirMoneda(monto, tc);
-  const viajerosSel = esTransporte ? participantes : [];
+  const viajerosSel = esVuelos ? participantes : [];
   const repartoBase = repartoUniforme(montoMXN, viajerosSel);
   const importeDe = (id: string) => {
     const t = importes[id];
@@ -179,6 +196,29 @@ function Gastos() {
     }));
   }
 
+  /** Evidencia de viaje del grupo (Transporte Terrestre): sin participante. */
+  async function cargarEvidenciaGrupo(tramo: "Ida" | "Vuelta", lista: FileList | null) {
+    const file = lista?.[0];
+    if (!file) return;
+    if (file.size > MAX_ARCHIVO_MB * 1024 * 1024)
+      return setError(`El archivo "${file.name}" excede ${MAX_ARCHIVO_MB} MB.`);
+    const leido = await leerArchivo(file);
+    const otros = [
+      ...archivos,
+      ...[grupo.Ida, grupo.Vuelta].filter(
+        (a): a is Archivo => Boolean(a) && a?.tramo !== tramo,
+      ),
+    ];
+    const dup = await buscarDuplicado([leido], estado.gastos);
+    const dupLocal = await buscarDuplicado([leido, ...otros], []);
+    if (dup || dupLocal) {
+      setError(mensajeDuplicado(leido.nombre, dup?.coincidencia ?? null));
+      return;
+    }
+    setError("");
+    setGrupo((prev) => ({ ...prev, [tramo]: { ...leido, tramo } }));
+  }
+
 
   async function cargarArchivos(lista: FileList | null) {
     if (!lista) return;
@@ -235,20 +275,29 @@ function Gastos() {
       return setError("Adjunta la factura (XML/PDF) del CFDI nacional o cambia el tipo de comprobante.");
     }
 
-    if (esTransporte && viajerosSel.length && Math.abs(diferenciaReparto) > 0.01)
+    if (esVuelos && viajerosSel.length && Math.abs(diferenciaReparto) > 0.01)
       return setError(
         `La suma de los importes por viajero (${mxn(sumaIndividual)}) no cuadra con el total del gasto (${mxn(montoMXN)}). Diferencia: ${mxn(diferenciaReparto)}.`,
       );
 
+    if (pideJustificacion && !f.justificacion.trim())
+      return setError(
+        'En el rubro "Otros" la justificación escrita del concepto es obligatoria, haya o no factura.',
+      );
+
     const avisosPendientes: string[] = [];
-    if (esTransporte) {
+    if (esTraslado) {
       if (!f.origenPais || !f.origenCiudad.trim() || !f.destinoPais || !f.destinoCiudad.trim())
         avisosPendientes.push("faltan datos completos de Origen y Destino");
-      if (faltanPases.length)
-        avisosPendientes.push(
-          `faltan pases de abordar (ida y regreso) de: ${faltanPases.map(nombreDe).join(", ")}`,
-        );
     }
+    if (esVuelos && faltanPases.length)
+      avisosPendientes.push(
+        `faltan pases de abordar (ida y regreso) de: ${faltanPases.map(nombreDe).join(", ")}`,
+      );
+    if (esTerrestre && (!grupo.Ida || !grupo.Vuelta))
+      avisosPendientes.push(
+        `falta la evidencia de viaje del grupo (${!grupo.Ida ? "ida" : ""}${!grupo.Ida && !grupo.Vuelta ? " y " : ""}${!grupo.Vuelta ? "vuelta" : ""})`,
+      );
 
 
     // Las validaciones fiscales solo aplican al régimen de CFDI nacional:
@@ -274,14 +323,16 @@ function Gastos() {
       }
     }
 
-    const adjuntos: Archivo[] = esTransporte
+    const adjuntos: Archivo[] = esVuelos
       ? [
           ...archivos,
           ...viajerosSel.flatMap((id) =>
             [pases[id]?.Ida, pases[id]?.Regreso].filter((a): a is Archivo => Boolean(a)),
           ),
         ]
-      : archivos;
+      : esTerrestre
+        ? [...archivos, ...[grupo.Ida, grupo.Vuelta].filter((a): a is Archivo => Boolean(a))]
+        : archivos;
 
 
     const dupDoc = await buscarDuplicado(adjuntos, estado.gastos);
@@ -301,17 +352,17 @@ function Gastos() {
       tipoComprobante: f.tipoComprobante,
       paisEmision: esExtranjero ? f.paisEmision : "",
       justificacion: f.justificacion.trim(),
-      origenPais: esTransporte ? f.origenPais : "",
-      origenCiudad: esTransporte ? f.origenCiudad.trim() : "",
-      destinoPais: esTransporte ? f.destinoPais : "",
-      destinoCiudad: esTransporte ? f.destinoCiudad.trim() : "",
-      escalas: esTransporte
+      origenPais: esTraslado ? f.origenPais : "",
+      origenCiudad: esTraslado ? f.origenCiudad.trim() : "",
+      destinoPais: esTraslado ? f.destinoPais : "",
+      destinoCiudad: esTraslado ? f.destinoCiudad.trim() : "",
+      escalas: esTraslado
         ? escalas
             .filter((x) => x.pais)
             .map((x) => ({ pais: x.pais, ciudad: x.ciudad.trim() }))
         : [],
       participantesIds: participantes,
-      viajeros: esTransporte ? viajeros : [],
+      viajeros: esVuelos ? viajeros : [],
       archivos: adjuntos,
 
       estatus: "Borrador",
@@ -387,6 +438,7 @@ function Gastos() {
     setParticipantes([]);
     setArchivos([]);
     setPases({});
+    setGrupo({});
     setImportes({});
 
     setIaMeta(null);
@@ -396,6 +448,12 @@ function Gastos() {
 
   async function enviarARevision(g: Gasto) {
     if (g.estatus !== "Borrador" && g.estatus !== "Devuelto para corrección") return;
+    if (rubroRequiereJustificacion(g.rubro) && !g.justificacion.trim()) {
+      setAviso("");
+      return setError(
+        `El gasto de "${g.proveedor}" es del rubro ${g.rubro}: captura la justificación escrita del concepto antes de enviarlo a revisión.`,
+      );
+    }
     const primero = g.estatus === "Borrador";
     try {
       const guardado = await actualizarGasto(g.id, { estatus: "Registrado" });
@@ -677,9 +735,9 @@ function Gastos() {
             </Aviso>
           </div>
 
-          {esTransporte ? (
+          {esTraslado ? (
             <fieldset className="md:col-span-3 rounded-lg border-2 border-border-strong p-3">
-              <legend className="px-1 text-sm font-semibold">Traslado (rubro Transporte)</legend>
+              <legend className="px-1 text-sm font-semibold">Traslado (rubro {f.rubro})</legend>
               <div className="grid gap-3 md:grid-cols-2">
                 <Campo etiqueta="País de origen" id="g-op">
                   <Selector id="g-op" value={f.origenPais} onChange={(e) => setF({ ...f, origenPais: e.target.value })}>
@@ -788,7 +846,8 @@ function Gastos() {
                 </p>
               </div>
 
-              <div className="mt-4">
+              {esVuelos ? (
+                <div className="mt-4">
                 <p className="text-sm font-semibold">Comprobación por viajero</p>
                 <p className="text-sm text-muted-foreground">
                   El total se reparte entre los participantes seleccionados abajo. Puedes ajustar el importe
@@ -866,8 +925,58 @@ function Gastos() {
                     )}
                   </p>
                 ) : null}
-              </div>
+                </div>
+              ) : null}
 
+              {esTerrestre ? (
+                <div className="mt-4">
+                  <p className="text-sm font-semibold">Evidencia de viaje del grupo</p>
+                  <p className="text-sm text-muted-foreground">
+                    Adjunta la lista de asistencia firmada o las fotografías del viaje de ida y del
+                    viaje de vuelta. Son evidencias del grupo, no de cada persona: el gasto se
+                    comprueba completo solo con factura y las dos evidencias.
+                  </p>
+                  <div className="mt-2 grid gap-2 md:grid-cols-2">
+                    {(["Ida", "Vuelta"] as const).map((tramo) => (
+                      <Campo
+                        key={tramo}
+                        etiqueta={`Evidencia del viaje de ${tramo.toLowerCase()}`}
+                        id={`g-grupo-${tramo}`}
+                      >
+                        <input
+                          id={`g-grupo-${tramo}`}
+                          type="file"
+                          accept="image/*,application/pdf"
+                          onChange={(e) => void cargarEvidenciaGrupo(tramo, e.target.files)}
+                          className="w-full rounded-md border-2 border-border-strong bg-input px-3 py-2 text-sm"
+                        />
+                        <span className="mt-1 block text-xs text-muted-foreground">
+                          {grupo[tramo]?.nombre ?? "Pendiente"}
+                        </span>
+                      </Campo>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+            </fieldset>
+          ) : null}
+
+          {pideJustificacion ? (
+            <fieldset className="md:col-span-3 rounded-lg border-2 border-border-strong p-3">
+              <legend className="px-1 text-sm font-semibold">Justificación del concepto</legend>
+              <Campo
+                etiqueta="Justificación escrita (obligatoria en el rubro Otros)"
+                id="g-just-otros"
+                ayuda="Describe con claridad el concepto del gasto: es obligatoria exista o no factura."
+              >
+                <AreaTexto
+                  id="g-just-otros"
+                  value={f.justificacion}
+                  onChange={(e) => setF({ ...f, justificacion: e.target.value })}
+                  placeholder="Ej. Renta de bodega para el equipamiento de la delegación"
+                />
+              </Campo>
             </fieldset>
           ) : null}
 
@@ -1073,7 +1182,7 @@ function Gastos() {
               </Celda>
               <Celda>
                 {mxn(g.montoMXN)}
-                {esGastoTransporte(g) ? (
+                {esGastoVuelos(g) || esGastoTerrestre(g) ? (
                   <p className="mt-1 text-xs">
                     <span className="font-semibold text-success">
                       Comprobado {mxn(comprobadoDe(g))}
@@ -1198,6 +1307,12 @@ function Gastos() {
                           g.escalas ?? [],
                           { pais: g.destinoPais, ciudad: g.destinoCiudad },
                         )}
+                      </li>
+                    ) : null}
+                    {rubroRequiereJustificacion(g.rubro) ? (
+                      <li className="text-muted-foreground">
+                        Justificación del concepto:{" "}
+                        <strong>{g.justificacion.trim() || "— sin capturar —"}</strong>
                       </li>
                     ) : null}
                     <li className="text-muted-foreground">

@@ -1,19 +1,36 @@
 import type { Archivo, Gasto, Viajero } from "./types";
 import { redondear, resta, suma } from "./dinero";
+import { rubroGrupoRedondo, rubroPorViajero } from "./rubros";
 
-/** Rubro al que aplica la comprobación por viajero. */
-export const RUBRO_TRANSPORTE = "Transporte";
+/** El gasto comprueba por viajero (rubro Vuelos). */
+export const esGastoVuelos = (g: Gasto) => rubroPorViajero(g.rubro);
 
-export const esGastoTransporte = (g: Gasto) => g.rubro === RUBRO_TRANSPORTE;
+/** El gasto comprueba con evidencia de viaje del grupo (Transporte Terrestre). */
+export const esGastoTerrestre = (g: Gasto) => rubroGrupoRedondo(g.rubro);
 
 /**
  * Hay factura que ampara el total cuando el régimen no es "Sin comprobante
- * fiscal" y existe al menos un documento del gasto que no sea un pase de
- * abordar de un viajero.
+ * fiscal" y existe al menos un documento del gasto que no sea evidencia de
+ * viaje: ni pase de abordar de un viajero ni evidencia de grupo con tramo.
  */
 export const tieneFactura = (g: Gasto) =>
   g.tipoComprobante !== "Sin comprobante fiscal" &&
-  (g.archivos ?? []).some((a) => !a.participanteId);
+  (g.archivos ?? []).some((a) => !a.participanteId && !a.tramo);
+
+/** Evidencia de viaje del grupo en un gasto de Transporte Terrestre. */
+export function evidenciaGrupo(g: Gasto): { ida: boolean; vuelta: boolean } {
+  const archivos = g.archivos ?? [];
+  const hay = (tramo: "Ida" | "Vuelta") =>
+    archivos.some((a) => !a.participanteId && a.tramo === tramo);
+  return { ida: hay("Ida"), vuelta: hay("Vuelta") };
+}
+
+/** El gasto terrestre tiene factura y las dos evidencias de viaje del grupo. */
+export function terrestreComprobado(g: Gasto): boolean {
+  if (!tieneFactura(g)) return false;
+  const { ida, vuelta } = evidenciaGrupo(g);
+  return ida && vuelta;
+}
 
 /** Reparto uniforme del total entre los viajeros; el último absorbe el redondeo. */
 export function repartoUniforme(total: number, ids: string[]): Viajero[] {
@@ -45,7 +62,7 @@ const tieneTramo = (archivos: Archivo[], id: string, tramo: "Ida" | "Regreso") =
 
 /** Desglose por viajero: importe individual, pases y monto pendiente. */
 export function desgloseViajeros(g: Gasto): FilaViajero[] {
-  if (!esGastoTransporte(g)) return [];
+  if (!esGastoVuelos(g)) return [];
   const asignados = (g.viajeros ?? []).filter((v) => v.participanteId);
   const ids = asignados.length ? asignados.map((v) => v.participanteId) : g.participantesIds ?? [];
   if (!ids.length) return [];
@@ -67,11 +84,13 @@ export const sumaViajeros = (viajeros: Viajero[]) =>
 
 /**
  * Monto del gasto que se toma como efectivamente comprobado.
- * Fuera de Transporte es el total; en Transporte requiere factura y, por
- * viajero, pase de ida y de regreso.
+ * En Vuelos requiere factura y, por viajero, pase de ida y de regreso.
+ * En Transporte Terrestre es todo o nada: factura más evidencia de viaje de
+ * ida y de vuelta del grupo. En los demás rubros es el total.
  */
 export function comprobadoDe(g: Gasto): number {
-  if (!esGastoTransporte(g)) return g.montoMXN;
+  if (esGastoTerrestre(g)) return terrestreComprobado(g) ? g.montoMXN : 0;
+  if (!esGastoVuelos(g)) return g.montoMXN;
   if (!tieneFactura(g)) return 0;
   const filas = desgloseViajeros(g);
   if (!filas.length) return g.montoMXN;

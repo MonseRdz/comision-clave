@@ -1,7 +1,57 @@
 import { mxn, useStore } from "@/lib/store";
-import { comprobadoDe, desgloseViajeros, esGastoTransporte, pendienteDe, tieneFactura } from "@/lib/transporte";
+import {
+  comprobadoDe,
+  desgloseViajeros,
+  esGastoTerrestre,
+  esGastoVuelos,
+  evidenciaGrupo,
+  pendienteDe,
+  tieneFactura,
+} from "@/lib/transporte";
 import type { Gasto } from "@/lib/types";
 import { Etiqueta } from "@/components/glass";
+
+/** Comprobación de grupo de un gasto de Transporte Terrestre: todo o nada. */
+export function EvidenciaTerrestre({ gasto }: { gasto: Gasto }) {
+  if (!esGastoTerrestre(gasto)) return null;
+  const { ida, vuelta } = evidenciaGrupo(gasto);
+  const conFactura = tieneFactura(gasto);
+  return (
+    <div className="mt-2 rounded-md border-2 border-border-strong p-2">
+      <p className="text-sm font-semibold">Comprobación del grupo (transporte terrestre)</p>
+      <div className="mt-2">
+        <ResumenComprobacion
+          comprobado={comprobadoDe(gasto)}
+          pendiente={pendienteDe(gasto)}
+          total={gasto.montoMXN}
+        />
+      </div>
+      <ul className="mt-2 flex flex-wrap gap-2 text-xs">
+        <li>
+          <Etiqueta tono={conFactura ? "ok" : "alerta"}>
+            {conFactura ? "Factura ✓" : "Falta factura"}
+          </Etiqueta>
+        </li>
+        <li>
+          <Etiqueta tono={ida ? "ok" : "alerta"}>
+            {ida ? "Evidencia de ida ✓" : "Falta evidencia de ida"}
+          </Etiqueta>
+        </li>
+        <li>
+          <Etiqueta tono={vuelta ? "ok" : "alerta"}>
+            {vuelta ? "Evidencia de vuelta ✓" : "Falta evidencia de vuelta"}
+          </Etiqueta>
+        </li>
+      </ul>
+      {comprobadoDe(gasto) === 0 ? (
+        <p className="mt-2 text-xs font-semibold text-warning">
+          Sin factura o sin las dos evidencias de viaje del grupo, el total queda pendiente de
+          comprobar.
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 /** Resumen prominente de comprobado vs. pendiente de un gasto. */
 export function ResumenComprobacion({
@@ -37,7 +87,8 @@ export function ResumenComprobacion({
 /** Desglose por viajero de un gasto de Transporte: importe, pases y pendiente. */
 export function DesgloseViajeros({ gasto }: { gasto: Gasto }) {
   const { estado } = useStore();
-  if (!esGastoTransporte(gasto)) return null;
+  if (esGastoTerrestre(gasto)) return <EvidenciaTerrestre gasto={gasto} />;
+  if (!esGastoVuelos(gasto)) return null;
   const filas = desgloseViajeros(gasto);
   if (!filas.length) return null;
   const nominales = estado.eventos.find((e) => e.id === gasto.eventoId)?.participantes ?? [];
