@@ -816,7 +816,8 @@ function Gastos() {
                 </p>
               </div>
 
-              <div className="mt-4">
+              {esVuelos ? (
+                <div className="mt-4">
                 <p className="text-sm font-semibold">Comprobación por viajero</p>
                 <p className="text-sm text-muted-foreground">
                   El total se reparte entre los participantes seleccionados abajo. Puedes ajustar el importe
