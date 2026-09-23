@@ -144,6 +144,21 @@
     outline-offset: 2px;
     border-radius: 4px;
   }
+
+  @media (max-width: 767px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
+
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea,
+    button {
+      min-height: 44px;
+    }
+  }
 }
 
 @utility glass-panel {

@@ -45,23 +45,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
         Saltar al contenido
       </a>
       <header className="glass-panel sticky top-0 z-40 m-3 rounded-2xl px-4 py-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
             <img
               src={logoAsset.url}
               alt="ADEMEBA"
               className="h-10 w-10 rounded-lg border border-hair bg-white object-contain p-0.5"
             />
-            <div>
-              <p className="titulo-tarjeta text-base leading-tight">Tresora Comprobación</p>
-              <p className="text-xs text-muted-foreground">ADEMEBA · Justificación de recursos públicos</p>
+            <div className="min-w-0">
+              <p className="titulo-tarjeta truncate text-base leading-tight">Tresora Comprobación</p>
+              <p className="hidden text-xs text-muted-foreground sm:block">ADEMEBA · Justificación de recursos públicos</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="text-right">
-              <p className="text-sm font-bold leading-tight">{usuarioActual.nombre}</p>
+          <div className="grid min-w-0 justify-items-end gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
+            <div className="min-w-0 text-right">
+              <p className="max-w-32 truncate text-sm font-bold leading-tight sm:max-w-none">{usuarioActual.nombre}</p>
               <p className="text-xs text-muted-foreground">
-                {usuarioActual.rol} · {usuarioActual.email}
+                {usuarioActual.rol}<span className="hidden md:inline"> · {usuarioActual.email}</span>
               </p>
             </div>
             {usuarioActual.rol === "Contralor" && pendientes > 0 ? (
@@ -101,7 +101,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </nav>
         ) : null}
       </header>
-      <main id="contenido" className="mx-auto max-w-6xl px-3 pb-16">
+      <main id="contenido" className="mx-auto min-w-0 max-w-6xl overflow-x-clip px-3 pb-16">
         {errorSync ? (
           <div className="pt-4">
             <Aviso tono="alerta">{errorSync}</Aviso>

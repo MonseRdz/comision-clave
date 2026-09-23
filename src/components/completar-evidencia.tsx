@@ -201,7 +201,7 @@ export function CompletarEvidencia({
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <Boton type="button" onClick={() => void guardar()} disabled={guardando}>
+        <Boton className="w-full md:w-auto" type="button" onClick={() => void guardar()} disabled={guardando}>
           {guardando ? "Guardando…" : "Guardar evidencia"}
         </Boton>
         {porCerrar > 0 && !esperaRevisionIncremento(gasto) && !incrementoValidado(gasto) ? (

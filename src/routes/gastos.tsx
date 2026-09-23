@@ -513,6 +513,157 @@ function Gastos() {
     estado.eventos.find((e) => e.id === g.eventoId)?.participantes.find((p) => p.id === id)?.nombre ??
     id;
 
+  const estadoGasto = (g: Gasto) => (
+    <>
+      <Etiqueta tono={tonoEstatus(g.estatus)}>{g.estatus}</Etiqueta>
+      {tieneSaldoEnDocumentacion(g) ? (
+        <p className="mt-1 text-xs font-semibold text-warning">
+          {mxn(saldoEnDocumentacion(g))} en documentación · fecha compromiso{" "}
+          {documentacionAbierta(g)?.fechaCompromiso}
+        </p>
+      ) : null}
+      {marcadoReintegro(g) ? (
+        <p className="mt-1 text-xs font-semibold text-warning">
+          {mxn(saldoReintegro(g))} marcados como reintegro
+        </p>
+      ) : null}
+      <EnviarSaldoDocumentacion gasto={g} />
+      {saldoSinDestino(g) ? (
+        <p className="mt-1 text-xs text-muted-foreground">
+          Saldo pendiente por comprobar sin destino: {mxn(saldoSinEvidencia(g))}
+        </p>
+      ) : null}
+      {g.estatus === "Devuelto para corrección" && g.observaciones ? (
+        <p className="mt-1 text-xs font-semibold text-warning">
+          Motivo de devolución: {g.observaciones}
+        </p>
+      ) : null}
+      {g.observaciones && g.estatus !== "Devuelto para corrección" ? (
+        <p className="mt-1 text-xs">Observación: {g.observaciones}</p>
+      ) : null}
+    </>
+  );
+
+  const detalleGasto = (g: Gasto) =>
+    detalle === g.id ? (
+      <ul className="mt-2 min-w-0 space-y-1 break-words text-sm">
+        {g.archivos.length ? (
+          g.archivos.map((a) => (
+            <li key={a.nombre} className="min-w-0 break-all">
+              <ArchivoEnlace archivo={a} />
+            </li>
+          ))
+        ) : (
+          <li className="text-muted-foreground">Sin archivos adjuntos.</li>
+        )}
+        {g.origenPais || g.destinoPais ? (
+          <li className="text-muted-foreground">
+            Traslado:{" "}
+            {rutaTexto(
+              { pais: g.origenPais, ciudad: g.origenCiudad },
+              g.escalas ?? [],
+              { pais: g.destinoPais, ciudad: g.destinoCiudad },
+            )}
+          </li>
+        ) : null}
+        {rubroRequiereJustificacion(g.rubro) ? (
+          <li className="text-muted-foreground">
+            Justificación del concepto: <strong>{g.justificacion.trim() || "— sin capturar —"}</strong>
+          </li>
+        ) : null}
+        <li className="text-muted-foreground">
+          Tipo de comprobante: <strong>{g.tipoComprobante}</strong>
+          {g.paisEmision
+            ? ` · País de emisión: ${PAISES.find((p) => p.clave === g.paisEmision)?.nombre ?? g.paisEmision}`
+            : ""}
+        </li>
+        <li className="text-muted-foreground">
+          Subtotal: {g.subtotal !== undefined ? mxn(g.subtotal) : "—"} · IVA:{" "}
+          {g.iva !== undefined ? mxn(g.iva) : "—"} · Total que se comprueba:{" "}
+          <strong>{mxn(g.monto)}</strong> {g.moneda}
+        </li>
+        {g.uuidFiscal ? (
+          <li className="break-all text-muted-foreground">
+            UUID fiscal: {g.uuidFiscal} · RFC emisor: {g.rfcEmisor ?? "—"} · RFC receptor:{" "}
+            {g.rfcReceptor ?? "—"}
+          </li>
+        ) : null}
+        <li className="text-muted-foreground">
+          Participantes:{" "}
+          {g.participantesIds
+            .map(
+              (id) =>
+                estado.eventos
+                  .find((e) => e.id === g.eventoId)
+                  ?.participantes.find((p) => p.id === id)?.nombre ?? id,
+            )
+            .join(", ")}
+        </li>
+        <li>
+          <DesgloseViajeros gasto={g} />
+        </li>
+      </ul>
+    ) : null;
+
+  const accionesGasto = (g: Gasto) => (
+    <>
+      <div className="flex min-w-0 flex-wrap gap-2">
+        {g.estatus === "Borrador" || g.estatus === "Devuelto para corrección" ? (
+          <Boton className="w-full md:w-auto" onClick={() => void enviarARevision(g)}>
+            {g.estatus === "Borrador" ? "Enviar a revisión" : "Reenviar a revisión"}
+          </Boton>
+        ) : null}
+        <Boton variante="neutro" onClick={() => setDetalle(detalle === g.id ? null : g.id)}>
+          {detalle === g.id ? "Ocultar" : "Ver adjuntos"}
+        </Boton>
+        {puedeEditarComprobacion(g) ? (
+          <Boton
+            variante="neutro"
+            onClick={() => {
+              setError("");
+              setComprobacion(comprobacion === g.id ? null : g.id);
+            }}
+          >
+            {comprobacion === g.id ? "Cerrar comprobación" : "Editar comprobación"}
+          </Boton>
+        ) : null}
+        {edicion?.id === g.id ? (
+          <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            <label className="sr-only" htmlFor={`ed-${g.id}`}>
+              Nuevo monto
+            </label>
+            <Entrada
+              id={`ed-${g.id}`}
+              className="min-w-0 flex-1 md:w-28 md:flex-none"
+              type="number"
+              value={edicion.monto}
+              onChange={(e) => setEdicion({ id: g.id, monto: e.target.value })}
+            />
+            <Boton onClick={() => void guardarEdicion(g)}>Guardar</Boton>
+          </span>
+        ) : (
+          <Boton
+            variante="neutro"
+            onClick={() => {
+              if (esInmutable(g)) {
+                setAviso("");
+                setError(
+                  `El gasto de "${g.proveedor}" ya fue dictaminado (${g.estatus}) y es inmutable: no puede editarse.`,
+                );
+                return;
+              }
+              setError("");
+              setEdicion({ id: g.id, monto: String(g.monto) });
+            }}
+          >
+            Editar monto
+          </Boton>
+        )}
+      </div>
+      {detalleGasto(g)}
+    </>
+  );
+
   return (
     <div className="grid gap-4 pt-4">
       {error ? <Aviso tono="error">{error}</Aviso> : null}
