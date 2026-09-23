@@ -83,7 +83,7 @@ export function Campo({
 }
 
 const controlCls =
-  "w-full rounded-[10px] border border-hair bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground";
+  "min-h-11 w-full rounded-[10px] border border-hair bg-input px-3 py-2 text-base text-foreground placeholder:text-muted-foreground md:min-h-0 md:text-sm";
 
 export function Entrada({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={cn(controlCls, className)} />;
@@ -150,7 +150,7 @@ export function Tabla({
   const sinFilas = Array.isArray(filas) ? filas.filter(Boolean).length === 0 : !filas;
   if (vacio && sinFilas) return <p className="text-sm text-muted-foreground">{vacio}</p>;
   return (
-    <div className="overflow-x-auto">
+    <div className="min-w-0 max-w-full overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="bg-accent-soft text-ink">
