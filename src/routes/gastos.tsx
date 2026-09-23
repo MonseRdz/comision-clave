@@ -674,54 +674,118 @@ function Gastos() {
           <TituloPanel sub="Saldos de gastos ya aprobados que siguen esperando su evidencia. Sube los pases faltantes; el resto del gasto está bloqueado.">
             Documentación pendiente ({enDocumentacion.length})
           </TituloPanel>
-          <Tabla
-            cabeceras={["Gasto", "Evento", "Monto en documentación", "Qué falta", "Fecha compromiso", ""]}
-          >
+          <ul className="grid min-w-0 gap-3 md:hidden">
             {enDocumentacion.map((g) => (
-              <tr key={g.id}>
-                <Celda>
-                  <strong>{g.proveedor}</strong>
-                  <p className="text-xs text-muted-foreground">{g.rubro}</p>
-                </Celda>
-                <Celda>{estado.eventos.find((e) => e.id === g.eventoId)?.nombre ?? "—"}</Celda>
-                <Celda>
-                  <span className="cifra font-bold text-warning">{mxn(saldoEnDocumentacion(g))}</span>
-                  <p className="text-xs text-muted-foreground">de {mxn(g.montoMXN)} del gasto</p>
-                </Celda>
-                <Celda>
-                  <ul className="grid gap-1 text-xs">
-                    {faltantesDe(g).map((v) => (
-                      <li key={v.participanteId}>
-                        {nominalDe(g, v.participanteId)} · falta {v.falta} · {mxn(v.importe)}
-                      </li>
-                    ))}
-                    {faltantesDe(g).length === 0 ? (
-                      <li>Evidencia completa · espera el cierre del Contralor</li>
-                    ) : null}
-                  </ul>
-                </Celda>
-                <Celda>
-                  {documentacionAbierta(g)?.fechaCompromiso ?? "—"}
+              <li key={g.id} className="min-w-0 rounded-lg border border-hair bg-glass-strong p-3">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                  <div className="min-w-0">
+                    <h3 className="break-words font-bold">{g.proveedor}</h3>
+                    <p className="text-sm text-muted-foreground">{g.rubro}</p>
+                  </div>
                   {esCandidatoReintegro(g) ? (
-                    <p className="mt-1">
-                      <Etiqueta tono="error">Vencido · candidato a reintegro</Etiqueta>
-                    </p>
-                  ) : null}
-                </Celda>
-                <Celda>
-                  <Boton
-                    variante="neutro"
-                    onClick={() => {
-                      setError("");
-                      setEvidencia(evidencia === g.id ? null : g.id);
-                    }}
-                  >
-                    {evidencia === g.id ? "Cerrar" : "Completar evidencia"}
-                  </Boton>
-                </Celda>
-              </tr>
+                    <Etiqueta tono="error">Vencido</Etiqueta>
+                  ) : (
+                    <Etiqueta tono="alerta">Pendiente</Etiqueta>
+                  )}
+                </div>
+                <dl className="mt-3 grid min-w-0 gap-2 text-sm">
+                  <div>
+                    <dt className="text-xs font-semibold text-muted-foreground">Evento</dt>
+                    <dd className="break-words">{estado.eventos.find((e) => e.id === g.eventoId)?.nombre ?? "—"}</dd>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <dt className="text-xs font-semibold text-muted-foreground">En documentación</dt>
+                      <dd className="cifra font-bold text-warning">{mxn(saldoEnDocumentacion(g))}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs font-semibold text-muted-foreground">Total del gasto</dt>
+                      <dd>{mxn(g.montoMXN)}</dd>
+                    </div>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-semibold text-muted-foreground">Qué falta</dt>
+                    <dd>
+                      <ul className="grid gap-1">
+                        {faltantesDe(g).map((v) => (
+                          <li key={v.participanteId}>
+                            {nominalDe(g, v.participanteId)} · falta {v.falta} · {mxn(v.importe)}
+                          </li>
+                        ))}
+                        {faltantesDe(g).length === 0 ? (
+                          <li>Evidencia completa · espera el cierre del Contralor</li>
+                        ) : null}
+                      </ul>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-semibold text-muted-foreground">Fecha compromiso</dt>
+                    <dd>{documentacionAbierta(g)?.fechaCompromiso ?? "—"}</dd>
+                  </div>
+                </dl>
+                <Boton
+                  className="mt-3 w-full"
+                  variante="neutro"
+                  onClick={() => {
+                    setError("");
+                    setEvidencia(evidencia === g.id ? null : g.id);
+                  }}
+                >
+                  {evidencia === g.id ? "Cerrar" : "Completar evidencia"}
+                </Boton>
+              </li>
             ))}
-          </Tabla>
+          </ul>
+          <div className="hidden min-w-0 md:block">
+            <Tabla
+              cabeceras={["Gasto", "Evento", "Monto en documentación", "Qué falta", "Fecha compromiso", ""]}
+            >
+              {enDocumentacion.map((g) => (
+                <tr key={g.id}>
+                  <Celda>
+                    <strong>{g.proveedor}</strong>
+                    <p className="text-xs text-muted-foreground">{g.rubro}</p>
+                  </Celda>
+                  <Celda>{estado.eventos.find((e) => e.id === g.eventoId)?.nombre ?? "—"}</Celda>
+                  <Celda>
+                    <span className="cifra font-bold text-warning">{mxn(saldoEnDocumentacion(g))}</span>
+                    <p className="text-xs text-muted-foreground">de {mxn(g.montoMXN)} del gasto</p>
+                  </Celda>
+                  <Celda>
+                    <ul className="grid gap-1 text-xs">
+                      {faltantesDe(g).map((v) => (
+                        <li key={v.participanteId}>
+                          {nominalDe(g, v.participanteId)} · falta {v.falta} · {mxn(v.importe)}
+                        </li>
+                      ))}
+                      {faltantesDe(g).length === 0 ? (
+                        <li>Evidencia completa · espera el cierre del Contralor</li>
+                      ) : null}
+                    </ul>
+                  </Celda>
+                  <Celda>
+                    {documentacionAbierta(g)?.fechaCompromiso ?? "—"}
+                    {esCandidatoReintegro(g) ? (
+                      <p className="mt-1">
+                        <Etiqueta tono="error">Vencido · candidato a reintegro</Etiqueta>
+                      </p>
+                    ) : null}
+                  </Celda>
+                  <Celda>
+                    <Boton
+                      variante="neutro"
+                      onClick={() => {
+                        setError("");
+                        setEvidencia(evidencia === g.id ? null : g.id);
+                      }}
+                    >
+                      {evidencia === g.id ? "Cerrar" : "Completar evidencia"}
+                    </Boton>
+                  </Celda>
+                </tr>
+              ))}
+            </Tabla>
+          </div>
         </Panel>
       ) : null}
 
@@ -1035,6 +1099,7 @@ function Gastos() {
                             <input
                               id={`pase-ida-${id}`}
                               type="file"
+                              accept="image/*,application/pdf"
                               onChange={(e) => cargarPase(id, "Ida", e.target.files)}
                               className="w-full rounded-md border-2 border-border-strong bg-input px-3 py-2 text-sm"
                             />
@@ -1046,6 +1111,7 @@ function Gastos() {
                             <input
                               id={`pase-reg-${id}`}
                               type="file"
+                              accept="image/*,application/pdf"
                               onChange={(e) => cargarPase(id, "Regreso", e.target.files)}
                               className="w-full rounded-md border-2 border-border-strong bg-input px-3 py-2 text-sm"
                             />
@@ -1234,6 +1300,7 @@ function Gastos() {
                 <input
                   id="g-files"
                   type="file"
+                  accept="image/*,application/pdf"
                   multiple
                   onChange={(e) => cargarArchivos(e.target.files)}
                   className="w-full rounded-md border-2 border-border-strong bg-input px-3 py-2 text-sm"
@@ -1276,7 +1343,7 @@ function Gastos() {
           </fieldset>
 
           <div className="md:col-span-3">
-            <Boton type="submit">Registrar gasto</Boton>
+            <Boton className="w-full md:w-auto" type="submit">Registrar gasto</Boton>
           </div>
         </form>
       </Panel>
